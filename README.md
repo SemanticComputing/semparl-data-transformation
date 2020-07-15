@@ -36,7 +36,7 @@ Data was spread on individual session's main page and separate discussion pages,
  ```create_rdf.py``` transformed the data from the csv to RDF and produced files ```speeches_XXXX.ttl, items_and_documents_XXXX.ttl```  and ``` sessions_and_transcripts_XXXX.ttl```. This program required a csv-file ```python_csv_parliamentMembers.csv``` containing parliament member info, e.g. personal URIs, parties, party URIs and so on, for semantic tagging.
 
 
-## Valtiopäivät 2015-2019
+## Valtiopäivät 2015-2020
 - source: xml-data
 
 ```xml_to_CSV.py``` downloaded and converted xml data to ```speeches_XXXX.csv```, again, one Valtiopäivät per file.
