@@ -40,7 +40,6 @@ Data was spread on individual session's main page and separate discussion pages,
 ```html_to_all_csv.sh```-script was used to slightly automate this process.
 
  ```csv_to_xml.py``` took  the final ```speeches_XXXX.csv```-file and transformed the data to ParlaClarin-xml format, ```Speeches_XXXX.xml```.
- Some mistakes were very easy to spot from the xml, e.g. party-related problems from the ```<orgList>```-element, there often was one or two per year, these were **manually** fixed in the source csv and the xml creator re-run as this step took only one or two minutes.
 
  ```create_rdf.py``` transformed the data from the csv to RDF and produced files ```speeches_XXXX.ttl, items_and_documents_XXXX.ttl```  and ``` sessions_and_transcripts_XXXX.ttl```. This program required a csv-file ```python_csv_parliamentMembers.csv``` containing parliament member info, e.g. personal URIs, parties, party URIs and so on, for semantic tagging.
 
