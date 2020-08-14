@@ -14,24 +14,32 @@ def make_doc_link(document, year):
     # Lakialoite n:o 2
     # Valtiovarainvaliokunnan mietintö n:o 1
     # Mainittu kertomus (K n:o 4/1989 vp.)
+    # Maa- ja metsätalousvaliokunnan mietintö 1/ 1996 vp
 
     link = ''
     id_num = ''
+    document = document.replace('/ ', '/')
     parts = document.split()
-    for i in range(len(parts)):
-        if ('n:o' in parts[i] and i+1 < len(parts) and parts[i+1].strip()):
-            id_num = parts[i+1].strip()
-            break
+    if int(year) < 1995:
+        for i in range(len(parts)):
+            if ('n:o' in parts[i] and i+1 < len(parts) and parts[i+1].strip()):
+                id_num = parts[i+1].strip()
+                break
+    else:
+        for part in parts:
+            if part[0].isdigit():
+                id_num = part
+                break
     # id_num = document.partition('n:o ')[-1]  # .replace(' vp', '')
     if '/' in id_num:
         id_num = id_num.replace('/', '+').strip()
     else:
         id_num = id_num.strip() + '+' + year
-    id_num = re.sub('[a-zåöäA-ZÅÄÖ\-\.\) ]', '', id_num)
-    if 'Hallituksen esitys' in document:
+    id_num = re.sub('[a-zåöäA-ZÅÄÖ\-\.\) ,>]', '', id_num)
+    if 'Hallituksen esity' in document:
         link = 'https://www.eduskunta.fi/FI/vaski/HallituksenEsitys/Documents/he_{}.pdf'.format(
             id_num)
-    elif 'Lakialoit' in document:
+    elif 'Lakialoit' in document or 'lakialoit' in document:
         link = 'https://www.eduskunta.fi/FI/vaski/Lakialoite/Documents/la_{}.pdf'.format(
             id_num)
     elif 'ertomus' in document:
@@ -45,6 +53,21 @@ def make_doc_link(document, year):
 
         link = 'https://www.eduskunta.fi/FI/vaski/Kertomus/Documents/k_{}.pdf'.format(
             id_num)
+    elif 'Toivomus' in document:
+        link = 'https://www.eduskunta.fi/FI/vaski/EduskuntaAloite/Documents/ta_{}.pdf'.format(
+            id_num)
+    elif 'Keskustelualoit' in document:
+        link = 'https://www.eduskunta.fi/FI/vaski/eduskuntaaloite/Documents/ka_{}.pdf'.format(
+            id_num
+        )
+    elif 'Valtioneuvoston kirjelmä' in document:
+        link = 'https://www.eduskunta.fi/FI/vaski/Kirjelma/Documents/u_{}.pdf'.format(
+            id_num
+        )
+    elif 'Valtioneuvoston tiedonanto' in document:
+        link = 'https://www.eduskunta.fi/FI/vaski/Selonteko/Documents/vnt_{}.pdf'.format(
+            id_num
+        )
     elif 'valiokunnan mietintö' in document:
         abrev = ''
         if 'Suuren' in document:
@@ -71,7 +94,7 @@ def make_doc_link(document, year):
             abrev = 'puvm'
         elif 'Sivistys' in document:
             abrev = 'sivm'
-        elif 'Sosiaali' in document:
+        elif 'Sosiaali' in document or 'terveys' in document:
             abrev = 'stvm'
         elif 'Talous' in document:
             abrev = 'tavm'
@@ -106,17 +129,17 @@ def find_speaker(member_info, firstname, lastname, party,  date, not_found):
         return '', ''
     speech_date = time.strptime(date, '%Y-%m-%d')
     for row in member_info[1:]:
-        if row[7]:
+        if row[7]:  # started as MP
             row_start = time.strptime(row[7], '%Y-%m-%d')
-            if row[8]:
+            if row[8]:  # ended as MP
                 row_end = time.strptime(row[8], '%Y-%m-%d')
                 if ((row[2] in lastname or lastname in row[2])
-                    and (row[3] in firstname or firstname in row[3])
+                    and (row[3] == firstname)  # or firstname in row[3])
                         and speech_date >= row_start and speech_date <= row_end):
                     return row[1], row[10]
             else:
                 if ((row[2] in lastname or lastname in row[2])
-                    and (row[3] in firstname or firstname in row[3])
+                    and (row[3] == firstname)  # or firstname in row[3])
                         and speech_date >= row_start):
                     return row[1], row[10]
 
@@ -124,10 +147,28 @@ def find_speaker(member_info, firstname, lastname, party,  date, not_found):
     # time slice for them. Another run, taking only the person URI
     for row in member_info[1:]:
         if ((row[2] in lastname or lastname in row[2])
-                and (row[3] in firstname or firstname in row[3])):
+                and (row[3] == firstname)):  # or firstname in row[3])):
             return row[1], ''
     not_found.append([firstname, lastname])
     return '', ''
+
+
+def correct_party_URI(party, double_URI):
+    uris = {
+        'SMP': 'http://ldf.fi/semparl/groups/Q1854411',
+        'KESK': 'http://ldf.fi/semparl/groups/Q506591',
+        'RKP': 'http://ldf.fi/semparl/groups/Q845537',
+        'DEVA': 'http://ldf.fi/semparl/groups/Q540982',
+        'SKDL': 'http://ldf.fi/semparl/groups/Q585735',
+        'VAS': 'http://ldf.fi/semparl/groups/Q385927',
+        'KP': 'http://ldf.fi/semparl/groups/Q1628434',
+        'SDP': 'http://ldf.fi/semparl/groups/Q499029',
+        'KOK': 'http://ldf.fi/semparl/groups/Q304191',
+        'LKP': 'http://ldf.fi/semparl/groups/Q613849',
+    }
+    if party in uris:
+        return uris[party]
+    return double_URI
 
 
 def find_doc_link(related_documents, document):
@@ -149,18 +190,33 @@ def end_day(end_time, date):
 def make_doc_id(document, session, year):
     # Lakialoite n:o 21/1989 vp.
     id_ = ''
-    parts = document.split('n:o')
-    name = parts[0].split()
-    # initials
-    for word in name:
-        id_ += word[0:2].upper()
-    # there's a document number
-    if (len(parts) > 1 and parts[1].strip()):
-        num_part = parts[1].split()
-        id_ += re.sub('/', '_', num_part[0].strip())
-        return id_ + '_' + year
+    document = document.replace(' >', '')
+    if 1994 < int(year) < 2000:
+        parts = document.split()
+        if not '/' in document:
+            document += year
+        for part in parts:
+            if part[0].isalpha():
+                id_ += part[0:2].upper()
+            elif part[0].isdigit():
+                id_ += part.replace('/', '_')
+        return id_
     else:
-        return id_ + '_' + re.sub('/', '_', session)
+        parts = document.split('n:o')
+        name = parts[0].split()
+        # initials
+        for word in name:
+            id_ += word[0:2].upper()
+        if (len(parts) > 1 and parts[1].strip()):  # [Lakialoite, 21/1989 vp.]
+            # there's a document number
+            num_part = parts[1].split()            # [21/1989, vp.]
+            if '/' in num_part[0].strip():
+                id_ += re.sub('/', '_', num_part[0].strip())
+                return id_
+            # id_ += re.sub('/', '_', num_part[0].strip())
+            return id_ + num_part[0].strip() + '_' + year
+        else:
+            return id_ + '_' + re.sub('/', '_', session)
 
 
 def main(year):
@@ -172,7 +228,11 @@ def main(year):
     with open('speeches_{:s}.csv'.format(year), newline='') as f:
         reader = csv.reader(f)
         speeches = list(reader)
-    if 1999 < int(year) < 2015:
+
+    source_year = year
+    year = year.partition('_')[0]  # 1975_II
+
+    if 1998 < int(year) < 2015:
         with open('related_documents_details_{:s}.csv'.format(year), newline='') as f:
             reader = csv.reader(f)
             related_documents = list(reader)
@@ -230,33 +290,49 @@ def main(year):
         version = row[12].lstrip('versio')
         link = row[13]
         lang = row[14]
+        original_speaker = row[15]
         speech_start, speech_end = '', ''
         csv_speaker_ID = ''
         speech_version, speech_status = '', ''
         page = ''
+        subject_parts = ''
+        interpreted_party = ''
 
-        if int(year) < 2000:
-            page = row[15]
+        if (int(year) < 2000 and not(int(year) == 1999 and int(csv_session.partition('/')[0]) >= 86)):
+            page = row[16]
+            interpreted_party = csv_party.strip()
+            try:
+                parameters = {'text': content}
+                results = requests.get(
+                    'http://demo.seco.tkk.fi/las/identify', params=parameters).json()
+                tags = []
+                tags = [k for d in results['details']
+                        ['languageDetectorResults'] for k in d.keys()]
+                lang = ':'.join(tags)
+            except:
+                lang = ''
+
         if int(year) > 2014:
-            if len(row) > 15:
-                csv_speaker_ID = row[15]
             if len(row) > 16:
-                speech_start = row[16]
+                csv_speaker_ID = row[16]
             if len(row) > 17:
-                speech_end = row[17]
+                speech_start = row[17]
             if len(row) > 18:
-                speech_status = row[18]
+                speech_end = row[18]
             if len(row) > 19:
-                speech_version = row[19].lstrip('versio')
+                speech_status = row[19]
+            if len(row) > 20:
+                speech_version = row[20].lstrip('versio')
 
         speech = URIRef('http://ldf.fi/semparl/s{}'.format(csv_speech_id))
         speaker_URI, party_URI = find_speaker(
             member_info, firstname, lastname, csv_party, date, not_found)
 
-        order = csv_speech_id.rpartition('.')[2]
-        subject_parts = csv_topic.split('>>>')
-        subject = re.sub('[0-9]+\)\W', '', subject_parts[0])
+        # Speaker was given multiple parties, hence multiple URIs
+        if ';' in party_URI:
+            party_URI = correct_party_URI(csv_party, party_URI)
 
+        order = csv_speech_id.rpartition('.')[2]
         session = URIRef(
             'http://ldf.fi/semparl/ps_{}'.format(re.sub('/', '_', csv_session)))
         transcript = URIRef(
@@ -265,12 +341,24 @@ def main(year):
         g.add((speech, RDF.type, semparls.Speech))
         g.add((speech, semparls.speaker, URIRef(speaker_URI)))
         g.add((speech, semparls.party, URIRef(party_URI)))
+
+        if '<Puhuja>' in original_speaker:
+            original_speaker = original_speaker.replace('<Puhuja>', '',)
+            g.add((speech, semparls.speaker_literal,
+                   Literal('Puhuja')))
+            g.add((speech, semparls.speaker_literal_interpreted,
+                   Literal(original_speaker)))
+        else:
+            g.add((speech, semparls.speaker_literal, Literal(
+                original_speaker)))
+
         g.add((speech, semparls.speechOrder, Literal(order, datatype=XSD.integer)))
         g.add((speech, semparls.content, Literal(content)))
         g.add((speech, DCTERMS.date, Literal(date, datatype=XSD.date)))
         g.add((speech, semparls.end_date, Literal(date, datatype=XSD.date)))
         g.add((speech, semparls.session, session))
         g.add((speech, semparls.diary, URIRef(link)))
+
         if (page and '-1' not in page):
             g.add((speech, semparls.page, Literal(page, datatype=XSD.integer)))
         if speech_start:
@@ -298,6 +386,14 @@ def main(year):
             role = URIRef(
                 'http://ldf.fi/semparl/{}'.format(re.sub(' ', '_', csv_party)))
             g.add((speech, semparls.role, role))
+
+        if (interpreted_party and interpreted_party.isupper()):
+            g.add((speech, semparls.party_literal_interpreted,
+                   Literal(interpreted_party)))
+        elif csv_party.isupper():
+            g.add((speech, semparls.party_literal,
+                   Literal(csv_party)))
+
         if 'astauspuheenvuoro' in response:
             g.add((speech, semparls.isResponse, Literal(True)))
 
@@ -309,12 +405,19 @@ def main(year):
             if content == 'Kannatan.':
                 g.add((speech, DCTERMS.language, finnish))
 
-        if subject.strip():  # There's a topic
+        if csv_topic.strip():  # There's a topic
+            subject_parts = csv_topic.split('>>>')
+            if (len(subject_parts) > 1 and not subject_parts[0].strip()):
+                # only documents, no separate topic, splitting creates empty first member
+                subject = subject_parts[1]
+            else:
+                subject = re.sub('[0-9]+\)\W', '', subject_parts[0])
+
             if current_topic != csv_topic:
                 current_topic = csv_topic
                 item_index += 1
             item = URIRef(
-                'http://ldf.fi/semparl/i{}'.format(year+csv_session.partition('/')[0]+str(item_index)))
+                'http://ldf.fi/semparl/i{}'.format(source_year+csv_session.partition('/')[0]+str(item_index)))
             g.add((speech, semparls.item, item))
             ig.add((item, RDF.type, semparls.Item))
             ig.add((item, semparls.session, session))
@@ -322,9 +425,10 @@ def main(year):
 
             # link to item/topic
             pattern = re.compile('\d+\)')
-            if int(year) > 2014 or int(year) < 2000:
+            if int(year) > 2014\
+                    or (int(year) < 2000 and not(int(year) == 1999 and int(csv_session.partition('/')[0]) >= 86)):
                 item_link = link
-            elif 1999 < int(year) < 2015:
+            elif 1998 < int(year) < 2015:
                 if pattern.match(csv_topic):
                     section = csv_topic.partition(')')[0]
                     item_link = 'https://www.eduskunta.fi/FI/Vaski/sivut/trip.aspx?triptype=ValtiopaivaAsiakirjat&docid=ptk+{}#KOHTA{}'.format(
@@ -335,30 +439,11 @@ def main(year):
 
         # if related documents
         if len(subject_parts) > 1:
-            i = 1
-            # so can add to document list while looping
-            loopcount = len(subject_parts)
-            # for document in subject_parts[1:]:
-            while i < loopcount:
-                document = subject_parts[i]
+            for document in subject_parts[1:]:
                 document = document.replace('n;o', 'n:o')
-                if int(year) < 2000:
-                    # Lakialoite n:o 21/1989 vp.
-                    # Lakialoitteet n:ot 34/1988 vp. ja 3
-                    if 'n:ot' in document:
-                        num_pattern = re.compile('[0-9]+\/?[0-9]*')
-                        name = document.partition('n:o')[0]
-                        doc_parts = document.split()
-                        for doc_part in doc_parts:
-                            if num_pattern.match(doc_part):
-                                subject_parts.append(
-                                    name+'n:o ' + doc_part.strip(','))
-                                loopcount += 1
-                        i += 1
-                        continue
-                    else:
-                        document_id = make_doc_id(document, session, year)
-
+                # make document_id
+                if (int(year) < 2000 and not(int(year) == 1999 and int(csv_session.partition('/')[0]) >= 86)):
+                    document_id = make_doc_id(document, session, year)
                 else:
                     if int(year) < 2015:
                         l = document.split('\xa0')
@@ -368,13 +453,14 @@ def main(year):
                         continue
                     l2 = l[1].split(' (')
                     document_id = re.sub(' |/', '_', l2[0].strip())
+
                 doc = URIRef(
                     'http://ldf.fi/semparl/{}'.format(document_id))
 
                 if 'HE' in document or 'Hallituksen esity' in document:
                     ig.add((item, semparls.government_proposal, doc))
                     ig.add((doc, RDF.type, semparls.GovernmentProposal))
-                elif 'LA' in document or 'Lakialoit' in document:
+                elif 'LA' in document or 'akialoit' in document:
                     ig.add((item, semparls.legislative_motion, doc))
                     ig.add((doc, RDF.type, semparls.LegislativeMotion))
                 elif 'mietintö' in document:
@@ -393,13 +479,13 @@ def main(year):
                     ig.add((item, semparls.related_document, doc))
                     ig.add((doc, RDF.type, semparls.RelatedDocument))
 
-                if int(year) > 1999:
+                if int(year) > 1999 or (int(year) == 1999 and int(csv_session.partition('/')[0]) >= 86):
                     if int(year) < 2015:
                         doc_link = find_doc_link(
                             related_documents, document)
                         ig.add((doc, DCTERMS.title, Literal(
                             re.sub('\xa0', '', document), lang="fi")))
-                    elif 1999 < int(year) < 2015:
+                    else:  # elif 1998 < int(year) < 2015: virhe?
                         temp_l = re.sub(' ', '_', l2[0].strip())
                         doc_link = 'https://www.eduskunta.fi/FI/vaski/KasittelytiedotValtiopaivaasia/Sivut/{}.aspx'.format(
                             re.sub('\/', '+', temp_l.strip('_vp'))
@@ -409,6 +495,10 @@ def main(year):
                     ig.add((doc, semparls.id, Literal(
                         l2[0].strip(), datatype=XSD.string)))
                     ig.add((doc, semparls.url, URIRef(doc_link)))
+                elif int(year) < 1980:
+                    # no document URL
+                    ig.add((doc, DCTERMS.title, Literal(
+                        document.strip(), lang="fi")))
                 else:
                     if document in document_links:
                         doc_link = document_links[document]
@@ -419,7 +509,6 @@ def main(year):
                         ig.add((doc, semparls.url, URIRef(doc_link)))
                     ig.add((doc, DCTERMS.title, Literal(
                         document.strip(), lang="fi")))
-                i += 1
 
         if current_session != csv_session:
             current_session = csv_session
@@ -441,7 +530,7 @@ def main(year):
             if version.strip():
                 sg.add((transcript, semparls.version, Literal(
                     float(version.lstrip('.')), datatype=XSD.decimal)))
-            if status:
+            if status.strip():
                 if 'yväksytty' in status:
                     sg.add((transcript, semparls.status, s.Accepted))
                 elif 'arkistettu' in status:
@@ -456,7 +545,7 @@ def main(year):
                 transcript_url = 'https://www.eduskunta.fi/FI/vaski/Poytakirja/Sivut/PTK_{}.aspx'.format(
                     re.sub('\/', '+', csv_session)
                 )
-            elif int(year) > 1999:
+            elif int(year) > 1999 or (int(year) == 1999 and int(csv_session.partition('/')[0]) >= 86):
                 transcript_url = 'https://www.eduskunta.fi/FI/Vaski/sivut/trip.aspx?triptype=ValtiopaivaAsiakirjat&docid=ptk+{}'.format(
                     csv_session)
             else:
@@ -466,13 +555,14 @@ def main(year):
 
     # print(g.serialize(format='turtle').decode('utf-8'))
     g.serialize(destination='speeches_{}.ttl'.format(
-        year), format='turtle')
+        source_year), format='turtle')
     sg.serialize(destination='sessions_and_transcripts_{}.ttl'.format(
-        year), format='turtle')
+        source_year), format='turtle')
     ig.serialize(destination='items_and_documents_{}.ttl'.format(
-        year), format='turtle')
+        source_year), format='turtle')
     print('personal ID number not found for following persons:')
     pprint(not_found)
+    #print('HTTP-haut POIS PÄÄLTÄ')
 
 
 if __name__ == "__main__":

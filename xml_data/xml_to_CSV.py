@@ -47,6 +47,9 @@ def extract_content(speech_section):
 
 
 def extract_cp_content(speech):
+    """  print('**********************')
+    contents = speech.find_all('sis:KappaleKooste')
+    print(contents) """
     content = ''
     speech.find('vsk1:PuheenjohtajaTeksti').extract()
     content = speech.strings
@@ -55,6 +58,7 @@ def extract_cp_content(speech):
 
 def date_times(section):
     if section:
+        # print(section.find('met1:NimekeTeksti'))
         parts = section.find('met1:NimekeTeksti').string.split()
         date = parts[1].split('.')
         try:
@@ -101,6 +105,12 @@ def main(year):
         rows = json_data['rowData']
         for row in rows:
             soup = BeautifulSoup(row[1], "xml")
+            # **************************
+            """ file = open('vaski.xml', "a")
+            file.write(soup.prettify())
+            file.write('****************************************')
+            file.close() """
+            # ***********************************
             session = '{:d}/{}'.format(i, year)
             date, session_start, session_end = date_times(
                 soup.find('asi:IdentifiointiOsa'))
@@ -146,17 +156,19 @@ def main(year):
                                     ['languageDetectorResults'] for k in d.keys()]
                             langs = ':'.join(tags)
                         except:
-                            langs = ' '
+                            langs = ''
                         try:
                             all_speeches.append([speech_id, session, date, session_start, session_end,
                                                  speaker[-2], speaker[-1], ' '.join(
                                                      speaker[:-2]), topic, content,
-                                                 ' ', doc_status, doc_version, link, langs])
+                                                 ' ', doc_status, doc_version, link, langs, ' '.join(
+                                                     speaker)])
                         except:
                             all_speeches.append([speech_id, session, date, session_start, session_end,
-                                                 '', 'ERROR', ' '.join(
+                                                 '', '', ' '.join(
                                                      speaker), topic, content,
-                                                 ' ', doc_status, doc_version, link, langs])
+                                                 ' ', doc_status, doc_version, link, langs, ' '.join(
+                                                     speaker)])
                     else:
                         #speech_type = speech.attrs['vsk1:puheenvuoroLuokitusKoodi']
                         response = ' '
@@ -193,11 +205,11 @@ def main(year):
                                     ['languageDetectorResults'] for k in d.keys()]
                             langs = ':'.join(tags)
                         except:
-                            langs = ' '
+                            langs = ''
 
                         all_speeches.append([speech_id, session, date, session_start, session_end,
                                              first, last, party, topic, content, response,
-                                             doc_status, doc_version, link, langs, speaker_id,
+                                             doc_status, doc_version, link, langs, first + ' ' + last, speaker_id,
                                              details['startTime'], details['endTime'], details['status'], details['textVersion']])
                     counter += 1
                     print(counter)
@@ -205,6 +217,8 @@ def main(year):
     with open('speeches_{}.csv'.format(year), 'w', newline='') as file:
         writer = csv.writer(file, delimiter=',')
         writer.writerows(all_speeches)
+        # writer.writerow([details['speechID'], details['speechOrder'], speaker_id, first, last, party, details['startTime'], details['endTime'], content,
+        #                 details['language'], speech_type, details['status'], other_id, details['textVersion']])
 
 
 if __name__ == "__main__":

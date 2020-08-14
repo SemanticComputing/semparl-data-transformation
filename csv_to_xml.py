@@ -9,11 +9,13 @@ def chairman_tag(title):
     if title == 'Ikäpuhemies':
         return 'elderMember'
     elif title == 'Puhemies':
-        return 'chair'
+        return 'chairman'
     elif title == 'Ensimmäinen varapuhemies':
         return 'viceChair'
-    else:
+    elif title == 'Toinen varapuhemies':
         return 'secondViceChair'
+    else:
+        return 'chair'
 
 
 def build_tree(speeches, year):
@@ -58,7 +60,7 @@ def build_tree(speeches, year):
     all_roles = []
     current_document = ''
     current_topic = '-'
-
+    year = year.partition('_')[0]  # 1975_II
     for row in speeches:
         speech_id, document, date, start, end = row[0], row[1], row[2], row[3], row[4]
         firstname, lastname, party = row[5].strip(
@@ -66,16 +68,13 @@ def build_tree(speeches, year):
         topic, content, reply = row[8], row[9], row[10]
         status, version, link = row[11], row[12].lstrip('versio'), row[13]
         speech_start, speech_end, page = '', '', ''
-        if 'Isohookana-Asunmaa(vas-<REMOVE>' in lastname:
-            lastname = 'Isohookana-Asunmaa'
-            reply = 'Vastauspuheenvuoro'
         if int(year) > 2014:
-            if len(row) > 16:
-                speech_start = row[16]
             if len(row) > 17:
-                speech_end = row[17]
-        if int(year) < 2000:
-            page = row[15]
+                speech_start = row[17]
+            if len(row) > 18:
+                speech_end = row[18]
+        if int(year) < 1999 or (int(year) == 1999 and int(document.partition('/')[0]) < 86):
+            page = row[16]
 
         if document != current_document:
             current_document = document
@@ -111,7 +110,7 @@ def build_tree(speeches, year):
             body = SubElement(text, 'body')
 
         # check if speaker or party already added to corpus metadata, if not, add
-        speaker = '{:s}_{:s}'.format(firstname, lastname)
+        speaker = '{:s}_{:s}'.format(firstname.replace(' ', '_'), lastname)
         if speaker not in all_speakers:
             all_speakers.append(speaker)
             person = SubElement(listPerson, 'person', {'xml:id': speaker})
@@ -224,6 +223,7 @@ def build_tree(speeches, year):
                                 u.text = speech_parts[i].strip()
                                 part += 1
                             # the last part at all or before chairman ends speech
+                            # or i == len(speech_parts)-2):
                             elif i == len(speech_parts)-1:
                                 u = SubElement(
                                     div, 'u', {'who': '#{:s}'.format(speaker), 'xml.id': '{:s}.{:d}'.format(speech_id, part), 'prev': '{:s}.{:d}'.format(speech_id, part-1)})

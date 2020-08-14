@@ -7,15 +7,24 @@ Tools for gathering and formatting data for the Semantic Parliament dataservice 
 3. Create xml-file of data in [ParlaCLARIN-format](https://clarin-eric.github.io/parla-clarin/)
 4. Create ttl-files of data
 
-## Valtiopäivät 1990-1999
-- source: txt-files ORC'ed from pdf-files 
-
-#### manual step
+#### manual step for pdf-based data
 As the first line of a Pöytäkirja contained crucial metadata
 ```
 111. Maanantaina 16 päivänä joulukuuta 1991
 ```
- all the txt-files were run through ```print_session-titles.py```. The program printed all of these first lines that were intact. The missing first lines could be easily inferred from the print out and fixed in the txt-file (usually the line was splitted). This process for the whole decade took max. 30 minutes and made the following processings remarkably easier.
+ all the txt-files were run through ```print_session-titles.py```. The program printed all of these first lines that were intact. The missing first lines could be easily inferred from the print out and fixed in the txt-file (usually the line was splitted). This process for a whole decade took max. 1 hour and made the following processings remarkably easier.
+
+## Valtiopäivät 1980-1988
+- source: txt-files OCR'ed from pdf-files
+
+
+## Valtiopäivät 1989-1994
+- source: txt-files OCR'ed from pdf-files 
+
+
+## Valtiopäivät 1985-1999
+- source: txt-files OCR'ed from pdf-files 
+
 
 
 ## Valtiopäivät 2000-2014
