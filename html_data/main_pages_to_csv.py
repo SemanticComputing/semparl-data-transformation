@@ -92,7 +92,10 @@ def parse_speech(s):
                     speech += ' {:s}'.format(p.text)
             no_linebreaks = re.sub('\n *', ' ', speech)
             speech = re.sub('\t', '', no_linebreaks)
-            return speaker[-2], speaker[-1], ' '.join(speaker[:-2]).capitalize(), speech.strip()
+            if speaker:
+                return speaker[-2], speaker[-1], ' '.join(speaker[:-2]).capitalize(), speech.strip()
+            else:
+                return '', '', '', speech.strip()
         else:
             return '', '', parts[0].strip(), parts[1].strip()
     elif 'VAKUUTUS' in s['class']:

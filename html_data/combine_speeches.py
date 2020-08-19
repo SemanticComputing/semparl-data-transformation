@@ -113,11 +113,6 @@ def main(year):
             row[4] = parts[1]
             row[5] = parts[2]
             row[6] = 'Ikäpuhemies'
-        if(year == '2011' and 'Valtioneuvoston apulaisoikeuskansleri' in row[4]):
-            row[4] = 'Mikko'
-            row[5] = 'Puumalainen'
-            row[6] = 'Valtioneuvoston apulaisoikeuskansleri'
-        # fill in missing times
         if (not row[2] and row[0] in times.keys() and 'start' in times[row[0]].keys()):
             row[2] = times[row[0]]['start']
         if (not row[3] and row[0] in times.keys() and 'end' in times[row[0]].keys()):
@@ -148,6 +143,13 @@ def main(year):
             row.insert(14, ':'.join(tags))
         except:
             row.insert(14, '')
+        if 'uhemies' in row[7]:
+            row.insert(15, row[7])
+        else:
+            row.insert(15, row[5] + ' ' + row[6])
+        if row[1] == '89/2009':
+            row[2] = '2009-10-08'
+
         print(row[0])
 
     with open('speeches_{:s}.csv'.format(year), 'w') as save_to:

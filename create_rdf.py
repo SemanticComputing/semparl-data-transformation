@@ -127,26 +127,37 @@ def make_doc_link(document, year):
 def find_speaker(member_info, firstname, lastname, party,  date, not_found):
     if not firstname or not lastname:
         return '', ''
+    lastname = re.sub('\xa0', '', lastname)
+
+    if (firstname == 'Leena-Kaisa' and lastname == 'Harkimo'):
+        firstname = 'Leena'
+    if (firstname == 'Timo' and lastname == 'Korhonen'):
+        firstname = 'Timo V.'
+    if (firstname == 'Eeva Maria' and lastname == 'Maijala'):
+        firstname = 'Eeva-Maria'
+
     speech_date = time.strptime(date, '%Y-%m-%d')
+
     for row in member_info[1:]:
-        if row[7]:  # started as MP
-            row_start = time.strptime(row[7], '%Y-%m-%d')
-            if row[8]:  # ended as MP
-                row_end = time.strptime(row[8], '%Y-%m-%d')
-                if ((row[2] in lastname or lastname in row[2])
-                    and (row[3] == firstname)  # or firstname in row[3])
-                        and speech_date >= row_start and speech_date <= row_end):
-                    return row[1], row[10]
+        alters = [] if row[4] is None else row[4].split('; ')
+        if row[8]:  # started as MP
+            row_start = time.strptime(row[8], '%Y-%m-%d')
+            if row[9]:  # ended as MP
+                row_end = time.strptime(row[9], '%Y-%m-%d')
+                if ((row[2] == lastname or (alters and lastname in alters))
+                    and (row[3] == firstname)
+                        and row_end >= speech_date >= row_start):
+                    return row[1], row[11]
             else:
-                if ((row[2] in lastname or lastname in row[2])
+                if ((row[2] == lastname or (alters and lastname in alters))
                     and (row[3] == firstname)  # or firstname in row[3])
                         and speech_date >= row_start):
-                    return row[1], row[10]
+                    return row[1], row[11]
 
     # Occasionally there is a speech from a person who is not a MP anymore, so there is no proper
     # time slice for them. Another run, taking only the person URI
     for row in member_info[1:]:
-        if ((row[2] in lastname or lastname in row[2])
+        if ((row[2] == lastname or (alters and lastname in alters))
                 and (row[3] == firstname)):  # or firstname in row[3])):
             return row[1], ''
     not_found.append([firstname, lastname])
@@ -311,6 +322,7 @@ def main(year):
                 lang = ':'.join(tags)
             except:
                 lang = ''
+            print(csv_speech_id)
 
         if int(year) > 2014:
             if len(row) > 16:
