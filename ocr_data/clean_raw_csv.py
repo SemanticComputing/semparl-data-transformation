@@ -93,6 +93,7 @@ def clean_actor(actor):
     else:  # ministers etc.
         parts = actor.split(' ')
         if '(vastaus' in parts[-1]:
+            print(parts)
             last_name = parts[-2].strip()
             role = ' '.join(parts[:-2])
         else:
@@ -129,21 +130,20 @@ def check_time(time):
     return time
 
 
-def find_speaker(member_info, actor_first, last, party, date):
+def find_speaker(member_info, actor_first, last, party, date, not_found):
     if 'uhemies' in party:
         return actor_first, party
     problem_cases = {
         'Holkeri': 'Harri',
         'Norrback': 'Ole',
-        'Pohjala': 'Toivo T.',
+        # 'Pohjala': 'Toivo T.',
         'Tuomisto': 'Konstantin',
         'Lindblom': 'Seppo',
-        'Björkstrand': 'Gustav',
-    }
+        'Björkstrand': 'Gustav'}
 
     if not last.strip():
         return actor_first, party
-    if actor_last in problem_cases.keys():
+    if actor_last in problem_cases.keys():  # Not MP while minister
         return problem_cases[actor_last], party
 
     if '-' in actor_first:
@@ -152,24 +152,25 @@ def find_speaker(member_info, actor_first, last, party, date):
 
     speech_date = time.strptime(date, '%Y-%m-%d')
 
+    # first run considering only the "primary" lastname
     for row in member_info[1:]:
-        if row[7]:  # started as MP
-            row_start = time.strptime(row[7], '%Y-%m-%d')
-            if row[8]:  # ended as MP
-                row_end = time.strptime(row[8], '%Y-%m-%d')
+        if row[8]:  # started as MP
+            row_start = time.strptime(row[8], '%Y-%m-%d')
+            if row[9]:  # ended as MP
+                row_end = time.strptime(row[9], '%Y-%m-%d')
                 # and row[2] in actor_last or actor_last in row[2]
                 if (row[2] == actor_last.strip()):
                     if actor_first.strip():
                         if (row[3] and row[3].startswith(actor_first)  # actor_first in row[3]
                                 and row_end >= speech_date >= row_start):
                             if not party.strip():
-                                return row[3], row[9].strip('.').upper()
+                                return row[3], row[10].strip('.').upper()
                             else:
                                 return row[3], party
                     else:
                         if row_end >= speech_date >= row_start:
                             if not party.strip():
-                                return row[3], row[9].strip('.').upper()
+                                return row[3], row[10].strip('.').upper()
                             else:
                                 return row[3], party
             else:
@@ -179,15 +180,55 @@ def find_speaker(member_info, actor_first, last, party, date):
                         # actor_first in row[3]
                         if (row[3] and row[3].startswith(actor_first) and speech_date >= row_start):
                             if not party.strip():
-                                return row[3], row[9].strip('.').upper()
+                                return row[3], row[10].strip('.').upper()
                             else:
                                 return row[3], party
                     else:
                         if speech_date >= row_start:
                             if not party.strip():
-                                return row[3], row[9].strip('.').upper()
+                                return row[3], row[10].strip('.').upper()
                             else:
                                 return row[3], party
+
+    # second run trying alternative labels
+    for row in member_info[1:]:
+        if (row[8] and row[4]):  # started as MP + alternative names exist
+            alters = [] if row[4] is None else row[4].split('; ')
+            row_start = time.strptime(row[8], '%Y-%m-%d')
+            if row[9]:  # ended as MP
+                row_end = time.strptime(row[9], '%Y-%m-%d')
+                # and row[2] in actor_last or actor_last in row[2]
+                if (actor_last.strip() in alters):
+                    if actor_first.strip():
+                        if (row[3] and row[3].startswith(actor_first)  # actor_first in row[3]
+                                and row_end >= speech_date >= row_start):
+                            if not party.strip():
+                                return row[3], row[10].strip('.').upper()
+                            else:
+                                return row[3], party
+                    else:
+                        if row_end >= speech_date >= row_start:
+                            if not party.strip():
+                                return row[3], row[10].strip('.').upper()
+                            else:
+                                return row[3], party
+            else:
+                # and row[2] in actor_last or actor_last in row[2]
+                if (actor_last.strip() in alters):
+                    if actor_first.strip():
+                        # actor_first in row[3]
+                        if (row[3] and row[3].startswith(actor_first) and speech_date >= row_start):
+                            if not party.strip():
+                                return row[3], row[10].strip('.').upper()
+                            else:
+                                return row[3], party
+                    else:
+                        if speech_date >= row_start:
+                            if not party.strip():
+                                return row[3], row[10].strip('.').upper()
+                            else:
+                                return row[3], party
+    not_found.append(','.join([actor_first, actor_last, party]))
     return actor_first, party
 
 
@@ -253,6 +294,7 @@ def correct_party(party, lastname, date):
 filename = sys.argv[1]
 cleaned_rows = []
 member_info = []
+not_found = []
 csv.field_size_limit(sys.maxsize)
 with open('python_csv_parliamentMembers.csv') as f:
     reader = csv.reader(f, delimiter='\t')
@@ -291,8 +333,9 @@ with open(filename, newline='') as csvfile:
 
         actor_first, actor_last, party, speech_type = clean_actor(
             actor.strip())
+        actor_last = actor_last.strip('—')
         actor_first, party = find_speaker(
-            member_info, actor_first, actor_last, party, date)
+            member_info, actor_first, actor_last, party, date, not_found)
         party = correct_party(party, actor_last, date)
         langs = ' '  # This a remnant of earlier structure but left here to keep compability
 
@@ -339,3 +382,5 @@ cleaned_rows.sort(key=sort_sessions)
 with open('{:s}.csv'.format(output_file), 'w', newline='') as save_to:
     writer = csv.writer(save_to, delimiter=',')
     writer.writerows(cleaned_rows)
+
+pprint(set(not_found))

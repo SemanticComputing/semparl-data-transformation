@@ -38,7 +38,8 @@ def question_enders(row):
             or 'eskustelua ei synny.' in row or 'Puheenvuoroa ei haluta.' in row\
             or 'Kukaan ei pyydä puheenvuoroa.' in row \
             or 'Puheenvuoroa ei pyydetä.' in row\
-            or 'Puheenvuoron saatuaan lausuu' in row:
+            or 'Puheenvuoron saatuaan lausuu' in row\
+            or row == 'Liitteet':
         return True
     return False
 
@@ -259,7 +260,7 @@ def document_link(parliament_year, session_num, original_document_num):
         # Single session
         return 'https://www.eduskunta.fi/FI/vaski/Poytakirja/Documents/ptk_{:s}+{:s}.pdf'.format(session_num, parliament_year)
     elif int(parliament_year) == 1975:
-        docs = {'3': '1', '4': '2'}
+        docs = {'4': '1', '5': '2'}
         return 'https://s3-eu-west-1.amazonaws.com/eduskunta-asiakirja-original-documents-prod/suomi/1975/PTK_1975_II_{}.pdf'.format(
             docs[original_document_num]
         )

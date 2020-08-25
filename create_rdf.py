@@ -395,6 +395,7 @@ def main(year):
                 float(speech_version.lstrip('.')), datatype=XSD.decimal)))
 
         if not csv_party.isupper():
+            csv_party = re.sub('>|<|\|', '', csv_party)
             role = URIRef(
                 'http://ldf.fi/semparl/{}'.format(re.sub(' ', '_', csv_party)))
             g.add((speech, semparls.role, role))

@@ -177,7 +177,10 @@ def build_tree(speeches, year):
             note.set('page', page)
 
         if not 'uhemies' in party:
-            speech_parts = re.split('<<|>>', content)
+            if int(year) > 1998:
+                speech_parts = re.split('<<|>>', content)
+            else:
+                speech_parts = [content]
             # no interruptions
             if len(speech_parts) == 1:
                 u = SubElement(
@@ -202,6 +205,7 @@ def build_tree(speeches, year):
 
                     temp = re.sub(': \|', ':|', speech_parts[1])
                     chair = temp.split(':|')
+                    print(chair)
                     vocal = SubElement(div, 'vocal')
                     desc_v = SubElement(
                         vocal, 'desc', {'who': '#'+chairman_tag(chair[0])})

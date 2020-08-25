@@ -316,7 +316,11 @@ def edit_related_documents(topic):
                         if part[0].isdigit():
                             if '—' in part:  # 131—133
                                 start = int(part.partition('—')[0])
-                                end = int(part.strip(',').partition('—')[-1])
+                                try:
+                                    end = int(part.strip(
+                                        ',').partition('—')[-1])
+                                except:
+                                    continue
                                 for l in range(start, end+1):
                                     new.append('>>>' + doc_type +
                                                'n:o ' + str(l))

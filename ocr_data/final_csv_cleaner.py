@@ -30,8 +30,10 @@ for i in range(len(rows)):
     topic = rows[i][8]
     content = rows[i][9]
     reply = rows[i][10]
-    year = int(speech_id.partition('.')[0])
+    year = speech_id.partition('.')[0]
     original_speaker_layout = rows[i][15]
+
+    year = int(re.sub('_I+', '', year))
 
     if year < 2000:
         rows[i][6] = last.strip('—')
@@ -132,7 +134,7 @@ for i in range(len(rows)):
                                                                                   or last == '0')):
             rows[i][5], rows[i][6], rows[i][7] = 'Arja', 'Alho', 'Ministeri'
 
-        if last == 'E10o' or last == 'E|o' or last == 'F1o' or last == 'E1lo':
+        if last in ['FEIo', 'E10o', 'E|o', 'F1o', 'E1lo']:
             rows[i][5], rows[i][6], rows[i][7] = 'Mikko', 'Elo', 'SDP'
 
         if ('terveysministeri M' in party and 'önkäre' in last)\
@@ -204,9 +206,14 @@ for i in range(len(rows)):
         if 'Ulkomaankauppaministeri S a' in party and last == 'si':
             rows[i][5], rows[i][6], rows[i][7] = 'Kimmo', 'Sasi', 'Ulkomaankauppaministeri'
 
-        if ('Kulttuuriministeri Lin' in party and last.endswith('n'))\
-                or last == 'Linden':
+        if ('Kulttuuriministeri Lin' in party and last.endswith('n')):
             rows[i][5], rows[i][6], rows[i][7] = 'Suvi', 'Lindén', 'Kulttuuriministeri'
+
+        if last in ['Linden', 'Lindön', 'Lind6n']:
+            if 'Kulttuuriministeri' in party:
+                rows[i][5], rows[i][6], rows[i][7] = 'Suvi', 'Lindén', 'Kulttuuriministeri'
+            else:
+                rows[i][5], rows[i][6], rows[i][7] = 'Suvi', 'Lindén', 'KOK'
 
         if (('teollisuusministeri T' in party or 'teollisuusministeriT' in party) and last.endswith('ja')):
             rows[i][5], rows[i][6], rows[i][7] = 'Erkki', 'Tuomioja', 'Kauppa- ja teollisuusministeri'
@@ -248,7 +255,7 @@ for i in range(len(rows)):
             rows[i][5], rows[i][6], rows[i][7] = 'Tytti', 'Isohookana-Asunmaa', 'KESK'
             rows[i][10] = 'Vastauspuheenvuoro'
 
-        if 'Yläjätvi' in last or 'Yläjärtvi' in last:
+        if (('Yläjätvi' in last or 'Yläjärtvi' in last) and 'metsätalousministeri' in party):
             rows[i][5], rows[i][6], rows[i][7] = 'Toivo', 'Yläjärvi', 'Maa- ja metsätalousministeri'
 
         if last == 'Anna-LiisaJokinen' or last == 'Anna-LisaJokinen':
@@ -301,6 +308,112 @@ for i in range(len(rows)):
 
         if last == 'Äsvik':
             rows[i][5], rows[i][6], rows[i][7] = "Toivo", 'Åsvik', 'SKDL'
+
+        if (year not in [1970, 1971] and last == 'Laine' and first in ['FE', 'EF', 'F']):
+            rows[i][5], rows[i][6], rows[i][7] = 'Ensio', 'Laine', 'SKDL'
+
+        if (last == 'Lahtela' and first in ['F', 'EF', 'FE']):
+            rows[i][5], rows[i][6], rows[i][7] = 'Esa', 'Lahtela', 'SDP'
+
+        if 'Ed. ' in first:
+            rows[i][5] = first.replace('Ed. ', '')
+
+        if (last == 'Haavisto' and 'inisteri' in party):
+            rows[i][5] = 'Pekka'
+
+        if (year > 1990 and last in ['Ojala', '0jala'] and first in ['O', '0', 'O0']):
+            rows[i][5], rows[i][6], rows[i][7] = 'Outi', 'Ojala', 'VAS'
+
+        if last in ['R00s', 'Ro0s', 'R0os', 'R008', 'R005', 'Ro0os']:
+            if first == 'T':
+                rows[i][5], rows[i][6], rows[i][7] = 'Timo', 'Roos', 'SDP'
+            elif first == 'J':
+                rows[i][5], rows[i][6], rows[i][7] = 'Jukka', 'Roos', 'SDP'
+
+        if ('Pohjala' in last and 'metsätalousministeri' in party and not first):
+            rows[i][5], rows[i][6], rows[i][7] = 'Toivo T.', 'Pohjala', 'Maa- ja metsätalousministeri'
+
+        if (last in ['Ollila', 'Oilila', 'Oliila', 'Olliia'] and ('Valtiovarainmi' in party or 'teollisuusministe' in party)):
+            if 'Valtiovarainmi' in party:
+                rows[i][5], rows[i][6], rows[i][7] = 'Esko', 'Ollila', 'Valtiovarainministeri'
+            elif 'teollisuusministe' in party:
+                rows[i][5], rows[i][6], rows[i][7] = 'Esko', 'Ollila', 'Kauppa- ja teollisuusministeri'
+
+        if last == 'Taipale':
+            if 'Ministe' in party:
+                rows[i][5], rows[i][6], rows[i][7] = 'Vappu', 'Taipale', 'Ministeri'
+            elif 'terveysministeri' in party:
+                rows[i][5], rows[i][6], rows[i][7] = 'Vappu', 'Taipale', 'Sosiaali- ja terveysministeri'
+
+        if ('Kajanoja' == last and 'Työvoima' in party):
+            rows[i][5], rows[i][6], rows[i][7] = 'Jouko', 'Kajanoja', 'Työvoimaministeri'
+
+        if (last == 'Saatto' and ('inisteri' in party or 'inisteti' in party)):
+            if 'Liikenne' in party:
+                rows[i][5], rows[i][6], rows[i][7] = 'Veikko', 'Saarto', 'Liikenneministeri'
+            else:
+                rows[i][5], rows[i][6], rows[i][7] = 'Veikko', 'Saarto', 'Ministeri'
+
+        if (last == 'Koikkalainen' and 'Ministe' in party):
+            rows[i][5], rows[i][6], rows[i][7] = 'Johannes', 'Koikkalainen', 'Ministeri'
+
+        if (last == 'Rekola' and ('inisteri' in party or 'inisteti' in party)):
+            rows[i][5], rows[i][6] = 'Esko', 'Rekola'
+
+        if ('Nikula' == last and 'Oikeusminis' in party):
+            rows[i][5], rows[i][6], rows[i][7] = 'Paavo', 'Nikula', 'Oikeusministeri'
+
+        if (last == 'Paavela' and 'Valtiovarainminis' in party):
+            rows[i][5], rows[i][6], rows[i][7] = 'Paul', 'Paavela,', 'Valtiovarainministeri'
+
+        if (last == 'Berner' and 'teollisuusminis' in party and year < 1980):
+            rows[i][5], rows[i][6], rows[i][7] = 'Arne', 'Berner', 'Kauppa- ja teollisuusministeri'
+
+        if ('Puolustusministe' in party and last.startswith('Hom') and last.endswith('n')):
+            rows[i][5], rows[i][6], rows[i][7] = 'Carl-Olaf', 'Homén', 'Puolustusministeri'
+
+        if (1972 >= year >= 1975 and 'Ministe' in party and last == 'Väänänen'):
+            rows[i][5], rows[i][6], rows[i][7] = 'Marjatta', 'Väänänen', 'Ministeri'
+
+        if (last == 'Louekoski' and 'ministe' in party):
+            rows[i][5] = 'Matti'
+
+        if(last == 'Jansson' and 'Kauppa- ja teollisuusministe' in party):
+            rows[i][5], rows[i][7] = 'Jan-Magnus', 'Kauppa- ja teollisuusministeri'
+
+        if(last == 'Linnamo' and 'iniste' in party):
+            rows[i][5] = 'Jussi'
+
+        if(last == 'Kuusi' and 'terveysministe' in party):
+            rows[i][5], rows[i][7] = 'Pekka', 'Sosiaali- ja terveysministeri'
+
+        if(last == 'Lahtinen' and 'terveysministe' in party):
+            rows[i][5], rows[i][7] = 'Alli', 'Sosiaali- ja terveysministeri'
+
+        if (last in ['Jämsén', 'Jamsen', 'Jämsen', 'Jämsän', 'Jämsö&n', 'Jäms&n', 'Jämsän'] and 'iniste' in party):
+            rows[i][5], rows[i][6] = 'Artturi', 'Jämsén'
+
+        if (last == 'Miettunen' and 'Maatalousministe' in party):
+            rows[i][5], rows[i][7] = 'Martti', 'Maatalousministeri'
+
+        if('Oikeusminis' in party and last == 'Simonen'):
+            rows[i][5], rows[i][7] = 'Aarre', 'Oikeusministeri'
+
+        if('Pääminis' in party and last == 'Koivisto'):
+            rows[i][5], rows[i][7] = 'Mauno', 'Pääministeri'
+
+        if('Pääminis' in party and last == 'Karjalainen'):
+            rows[i][5], rows[i][7] = 'Ahti', 'Pääministeri'
+
+        if (last == 'Salonen' and 'teollisuusministe'):
+            rows[i][5], rows[i][7] = 'Olavi', 'Kauppa- ja teollisuusministeri'
+
+        if (last == 'Karttunen' and 'varainminis'):
+            rows[i][5], rows[i][7] = 'Osmo', 'Valtiovarainministeri'
+
+        if last in ['Nederström-Lundön', 'Nederström-Lunden', 'Nederström-Lundän', 'Nederström-Lundäön',
+                    'Nederström-Lund6&n', 'Nederström-Lundäön', 'Nederström-Lund&ö&n', 'Nederström-Lund6n']:
+            rows[i][5], rows[i][6], rows[i][7] = 'Judit', 'Nederström-Lundén', 'SKDL'
 
     new.append(rows[i])
 
