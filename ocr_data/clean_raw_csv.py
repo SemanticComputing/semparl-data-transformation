@@ -93,7 +93,7 @@ def clean_actor(actor):
     else:  # ministers etc.
         parts = actor.split(' ')
         if '(vastaus' in parts[-1]:
-            print(parts)
+            # print(parts)
             last_name = parts[-2].strip()
             role = ' '.join(parts[:-2])
         else:
@@ -117,6 +117,8 @@ def clean_actor(actor):
         first_name = 'S-L'
     if 'Y mpäristöministeri' in role:
         role = 'Ympäristöministeri'
+    if actor_last in ['Äsvik', 'Asvik']:
+        actor_last = 'Åsvik'
 
     return first_name, actor_last, role, speech_type
 
@@ -383,4 +385,4 @@ with open('{:s}.csv'.format(output_file), 'w', newline='') as save_to:
     writer = csv.writer(save_to, delimiter=',')
     writer.writerows(cleaned_rows)
 
-pprint(set(not_found))
+# pprint(set(not_found))

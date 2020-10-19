@@ -55,7 +55,7 @@ for i in range(len(rows)):
                 or 'jatkoi' in party or 'Koskelle' in last or 'jatkoi' in last\
                 or 'Vihriälälle' in last or 'keskustelu' in last\
                 or 'Laaksolle' in last or 'Mölsälle' in last or 'maalle' in last\
-                or 'relle' in party or 'kuuluva' in last\
+                or 'relle' in party or 'kuuluva' in last or 'ym,raha' in party\
                 or 'mieltä' in last or 'mieltä' in party or ',että' in last or 'asiaan' in last\
                 or 'Koskinenjatkaa' in last or 'hallitusmuodon' in last\
                 or 'Alholle' in last or 'teelle' in last or 'tolle' in last\
@@ -63,7 +63,7 @@ for i in range(len(rows)):
                 or 'aloittee' in last or 'mainits' in last or 'tämä' in party\
                 or 'RäsänenottiesiinValtatie10' in last or 'Tiurille' in last\
                 or 'Ala-Harjalle' in last or 'talolle' in last\
-                or 'Nurmelle' in last or 'niemelle' in last\
+                or 'Nurmelle' in last or 'niemelle' in last or 'ym,n' in party\
                 or 'Enestamille' in last or 'kuunnelkaa' in last\
                 or 'epäili' in party or 'olisi' in last or 'olisi' in first\
                 or 'Ministeri Niinistö, te olette' in party\
@@ -102,6 +102,7 @@ for i in range(len(rows)):
                 or 'edelleen' in party or 'mielestä' in party or 'perustel' in last\
                 or 'Sorsan ja' in party or 'vastata' in last or 'todennut' in party \
                 or 'niinhyvä' in last or 'kannatta' in last or 'ehdotus' in last\
+                or '(Eduskunnasta' in last\
                 or (last == 'Eklund' and content.startswith(' Salailu ei auta!)')):
 
             print(party, last)
@@ -414,6 +415,27 @@ for i in range(len(rows)):
         if last in ['Nederström-Lundön', 'Nederström-Lunden', 'Nederström-Lundän', 'Nederström-Lundäön',
                     'Nederström-Lund6&n', 'Nederström-Lundäön', 'Nederström-Lund&ö&n', 'Nederström-Lund6n']:
             rows[i][5], rows[i][6], rows[i][7] = 'Judit', 'Nederström-Lundén', 'SKDL'
+
+        if (last == 'Tiainen' and 'Ministe' in party):
+            rows[i][5] = 'Hannes'
+
+        if (last == 'Skog' and 'Puolustusminist' in party):
+            rows[i][5], rows[i][7] = 'Emil', 'Puolustusministeri'
+
+        if (last == 'Oittinen' and 'Opetusmin' in party):
+            rows[i][5], rows[i][7] = 'Reino', 'Opetusministeri'
+
+        if (last == 'Toivonen' and 'iniste' in party):
+            rows[i][5] = 'Onni'
+
+        if (last == 'Rangell' and 'Pääminis' in party):
+            rows[i][5], rows[i][7] = 'Johan', 'Pääministeri'
+
+        if (last == 'Ryti' and 'Pääminis' in party):
+            rows[i][5], rows[i][7] = 'Risto', 'Pääministeri'
+
+        if (last == 'Paasikivi' and 'Pääminis' in party):
+            rows[i][5], rows[i][7] = 'J.K.', 'Pääministeri'
 
     new.append(rows[i])
 

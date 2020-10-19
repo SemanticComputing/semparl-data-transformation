@@ -4,7 +4,7 @@ import sys
 from pprint import pprint
 
 #############################################
-# Script for 1960-1975_I                    #
+# Script for 1940-1975_I                    #
 # (I = 1. valtiopäivät, PTK_1975_1-3)   #
 #############################################
 
@@ -36,14 +36,16 @@ def question_starters(row):
 def question_enders(row):
     if 'Asia on loppuun käsitelty' in row or 'Asia on loppun käsitelty' in row \
             or 'eskustelua ei synny.' in row or 'Puheenvuoroa ei haluta' in row\
-            or 'Kukaan ei pyydä puheenvuoroa' in row \
+            or 'Kukaan ei pyydä puheenvuoroa' in row or 'Keskustelua ei haluta' in row\
             or 'Puheenvuoroa ei pyydetä' in row or 'Puheenvuotoa ei haluta' in row\
-            or 'Puheenvuoron saatuaan lausuu' in row:
+            or 'Puheenvuoroja ei pyydetä' in row\
+            or 'Puheenvuoron saatuaan lausuu' in row \
+            or 'Yleiskeskustelussa kukaan ei pyydä' in row:
         return True
     return False
 
 
-def topic_starter(row):
+def topic_starter(row, prev_row):
     problem_rows = [
 
     ]
@@ -63,6 +65,9 @@ def topic_starter(row):
     account = re.compile('^Valtioneuvoston talouspoliittinen selonteko')
     chair_questions = re.compile(
         '^Kysymy(s|ksiä) ja [sn]iih[ie]n annettu(ja)? vastau(s|ksia)[\.,]')
+
+    if prev_row.startswith('Päiväjärjestyksessä oleva asia'):
+        return True
     if topic.match(row) or interpellation.match(row) or iniative.match(row)\
             or budget.match(row) or account.match(row) or budget2.match(row)\
             or chair_questions.match(row) or 'Ikäpuhemiehen alkajaissanat' in row:
@@ -72,12 +77,14 @@ def topic_starter(row):
 
 def topic_enders(row, row2):
     if 'Valiokuntaan lähettäminen' in row or 'Puhetta johtaa' in row or 'käsittely' in row or 'uhemies:' in row\
-            or 'Valjokuntaan lähettäminen' in row or 'Lähetekeskustelu' in row:
+            or 'Valjokuntaan lähettäminen' in row or 'Lähetekeskustelu' in row\
+            or 'esitellään valiokuntaan lähettämistä' in row:
         return True
     if re.compile('lähetetään [a-zåäö]+neuvoston ehdotuksen').match(row):
         return True
     if row.startswith('Esitellään') or row.startswith('sisältävä')\
-            or row.startswith('Yllämainit') or row.startswith('Eisitellään'):
+            or row.startswith('Yllämainit') or row.startswith('Eisitellään')\
+            or row.startswith('Fsitellään'):
         return True
     if 'Puhemiehen paikalle asetuttuaan' in row:
         return True
@@ -140,7 +147,7 @@ def speech_starters(row, row2):
 
 def document_start(row):
     # 5. Tiistaina 13 päivänä helmikuuta 1990
-    if re.compile('\f*\(?[0-9]+[\.,\)] [A-Z][a-zåäö]+ [0-9]+ p[\-\.] .*kuuta 19[67][0-9]').match(row):
+    if re.compile('\f*\(?[0-9]+[\.,\)] [A-Z][a-zåäö]+ [0-9]+ p[\-\.] .*kuuta 19[4567][0-9]').match(row):
         return True
     return False
 
@@ -188,9 +195,12 @@ def acceptance(row):
             or 'Eduskunta on käsittelyn pohjaksi hy' in row\
             or 'Eduskunta on tässä äänestyksessä hyväksynyt' in row\
             or 'hyväksytään keskustelutta' in row\
+            or 'Puhemiesneuvoston ehdotus hyväksytään' in row\
             or 'Puhemiehistön ehdotus hyväksytään' in row\
             or 'Vaaliin ryhdytään ja liput avataan.' in row\
-            or 'Hyväksytään.' in row or 'Anomukseen suostutaan.' in row:
+            or row == 'Vaali toimitetaan.' or 'Vaalitoimitukseen ryhdytään.' in row\
+            or 'Hyväksytään.' in row or 'Anomukseen suostutaan.' in row\
+            or 'Anomuksiin suostutaan.' in row:
         return True
     return False
 
@@ -241,6 +251,7 @@ def handle_session_end(row, row2):
         end = parts[-1][:-1]
     if 'kello' in end:
         return ''
+    end = end.replace(',', '.')
     return end or ''
 
 
@@ -294,8 +305,9 @@ def mark_removable_hyphens(new):
             new[i] += '<REMOVE>'
 
 
-def edit_content(content):
-    new = []
+def not_content(content, i):
+    """Returns true if content[i] is not part of speech
+    """
     date_pagehead = re.compile(
         '[0-9]* ?[A-Z][a-z]+na [0-9]+ p\. .*kuuta [0-9]{4}')
     pagehead1 = re.compile(
@@ -304,22 +316,35 @@ def edit_content(content):
     number_lines = re.compile('^[0-9\/\. ]+$')
     chair_questions = re.compile(
         '^Kysymy(s|ksiä) ja [sn]iih[ie]n annettu(ja)? vastau(s|ksia)[\.,]')
+
+    if '\f' in content[i]:  # or number_lines.match(content[i]):
+        return True
+    elif date_pagehead.match(content[i]):
+        return True
+    elif (pagehead1.match(content[i]) and i+2 < len(content) and pagehead2.match(content[i+2])):
+        return True
+    elif content[i].isdigit():
+        return True
+    elif 'merkitään läsnä ' in content[i] or 'todetaan läsnäolevaksi' in content[i]:
+        return True
+    elif 'saapuu paikalleen istuntosaliin' in content[i] or 'Puheenvuoron saatuaan lausu' in content[i]:
+        return True
+    elif chair_questions.match(content[i]):
+        return True
+    else:
+        return False
+
+
+def edit_content(content):
+    new = []
+
     # print(content)
     for i in range(len(content)):
-        if '\f' in content[i]:  # or number_lines.match(content[i]):
+        if not_content(content, i):
             continue
-        elif date_pagehead.match(content[i]):
-            continue
-        elif (pagehead1.match(content[i]) and i+2 < len(content) and pagehead2.match(content[i+2])):
-            continue
-        elif not content[i].strip():
-            continue
-        elif 'merkitään läsnä ' in content[i] or 'todetaan läsnäolevaksi' in content[i]:
-            continue
-        elif 'saapuu paikalleen istuntosaliin' in content[i] or 'Puheenvuoron saatuaan lausuu' in content[i]:
-            continue
-        elif chair_questions.match(content[i]):
-            continue
+        elif (not content[i].strip() and content[i-1] and not not_content(content, i-1)
+                and i+1 < len(content) and not not_content(content, i+1)):
+            new.append('\n')
         else:
             row = re.sub('=|€|<<|^>> ', '', content[i])
             if row:
@@ -386,6 +411,9 @@ def edit_related_documents(topic):
     matches = list(set(matches))
 
     for match in matches:
+        match = re.sub('lak[\.,]a[l!][\.,]', 'lakialoite', match)
+        match = re.sub('toiv[\.,]a[l!][\.,]', 'toivomusaloite', match)
+        match = re.sub('rah[\.,]a[l!][\.,]', 'raha-asia-aloite', match)
         # capitalize() would lowercase names in 'ed. Kettunen ym...'
         match = match[0].upper()+match[1:]
         # hallituksen esitys n:o 128 (1974 vp.)
@@ -410,6 +438,7 @@ def edit_related_documents(topic):
             doc = re.sub('n[:;]+ot', 'n:ot', doc)
             doc = re.sub('lak[\.,]a[l!][\.,]', 'lakialoite', doc)
             doc = re.sub('toiv[\.,]a[l!][\.,]', 'toivomusaloite', doc)
+            doc = re.sub('rah[\.,]a[l!][\.,]', 'raha-asia-aloite', doc)
             if '(' in doc:
                 # lak.al. n:ot 18, 205 ja 206 (1973 vp.) sekä 15, 16, 17, 404 ja 405 (1974 vp.)
                 doc_type = doc.partition('n:ot')[0]
@@ -566,7 +595,7 @@ def main(filename):
         if (speech and 'Pöytäkirjan vakuudeksi:' in rows[i]):
             speech = False
         if (not index and not discussion):
-            if topic_starter(rows[i]):
+            if topic_starter(rows[i], rows[i-1] or ''):
                 speech = False
                 details = False
                 topic = True
@@ -578,8 +607,8 @@ def main(filename):
             topic = False
             current_topic.append('>>>')
         if speech:  # (speech and rows[i].strip()):  # latter added
-            if rows[i].strip():
-                current_speech.append(rows[i])
+            # if rows[i].strip():
+            current_speech.append(rows[i])
         else:
             if current_speech:
                 clean_content = edit_content(current_speech)
@@ -591,7 +620,7 @@ def main(filename):
                     [session, date, speaker, ' '.join(cleaned_topic), content, start_page, link])
                 current_speech = []
         if (not index and not discussion):
-            if topic_starter(rows[i]):
+            if topic_starter(rows[i], rows[i-1] or ''):
                 current_topic = []
         if (topic and '\f' not in rows[i] and rows[i]):
             current_topic.append(rows[i])

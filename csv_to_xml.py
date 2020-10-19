@@ -3,19 +3,69 @@ import sys
 from xml.etree.ElementTree import Element, SubElement, Comment, tostring, ElementTree
 from xml.dom import minidom
 import re
+from pprint import pprint
 
 
 def chairman_tag(title):
-    if title == 'Ikäpuhemies':
+    if 'Ikäpuhemies' in title:
         return 'elderMember'
-    elif title == 'Puhemies':
+    elif 'Puhemies' in title:
         return 'chairman'
-    elif title == 'Ensimmäinen varapuhemies':
+    elif 'Ensimmäinen varapuhemies' in title:
         return 'viceChair'
-    elif title == 'Toinen varapuhemies':
+    elif 'Toinen varapuhemies' in title:
         return 'secondViceChair'
     else:
         return 'chair'
+
+
+def is_interruption(m):
+    bad_patterns = [
+        '^[A-ZÅÄÖ]+ \d?',   # Documents, all-cap abbreviations
+        '\d+/\d+',          # More documents
+        '^[ÄA]än[\.,]? ?\d+',     # Votes
+        '^Kon[ec]e?ään[\.,]? ?\d+',     # Votes
+        'Lähde:', 'Källa:',
+        '^Liite ',
+        '^Pöytäkirjan liite',
+        'vastalause$'
+    ]
+
+    for bad in bad_patterns:
+        if re.compile(bad).search(m):
+            return False
+    if not m[0].isupper() or m.isupper():  # or m[0].isdigit()
+        return False
+    if len(m) > 300:
+        return False
+    return True
+
+
+def check_interruptions(content):
+    parts = []
+    interruptions = []
+    matches = re.findall('\([^)]+\)|\[[^\]]+\]', content)
+
+    # finds correct interruptions from parts encased in brackets
+    if matches:
+        for m in matches:
+            clean_m = re.sub('\(|\)|\[|\]|\|', '', m).strip()
+            if is_interruption(clean_m):
+                interruptions.append(m)
+
+    if not interruptions:
+        return [content]
+    else:
+        # splits speech to speech and interruption sections
+        to_split = content
+        for i in interruptions:
+            parts += [to_split.partition(i)[0]]  # speech
+            parts += ['INTER'+re.sub('\(|\)|\[|\]|\|', '', to_split.partition(i)
+                                     [1]).strip()]  # interruption
+            to_split = to_split.partition(i)[2]  # rest of the speech
+        if to_split.strip():
+            parts += [to_split.strip()]
+        return parts
 
 
 def build_tree(speeches, year):
@@ -68,6 +118,7 @@ def build_tree(speeches, year):
         topic, content, reply = row[8], row[9], row[10]
         status, version, link = row[11], row[12].lstrip('versio'), row[13]
         speech_start, speech_end, page = '', '', ''
+        content = content.replace('\n', '')
         if int(year) > 2014:
             if len(row) > 17:
                 speech_start = row[17]
@@ -82,7 +133,8 @@ def build_tree(speeches, year):
            # new session -> new TEI child for teiCorpus
 
             # Build TEI = session's speeches
-            tei = SubElement(root, 'TEI', {'xml:id': document})
+            tei = SubElement(
+                root, 'TEI', {'xml:id': 'ptk_' + document.replace('/', '_')})
             tei_teiHeader = SubElement(tei, 'teiHeader')
 
             tei_fileDesc = SubElement(tei_teiHeader, 'fileDesc')
@@ -172,15 +224,13 @@ def build_tree(speeches, year):
         # one speech (with possible interruptions) in one sub-div
         div = SubElement(topic_div, 'div')
         note = SubElement(
-            div, 'note', {'type': 'speaker', 'speechType': reply, 'link': link})
+            div, 'note', {'type': 'speaker', 'speechType': reply.strip(), 'link': link})
         if page:
             note.set('page', page)
 
         if not 'uhemies' in party:
-            if int(year) > 1998:
-                speech_parts = re.split('<<|>>', content)
-            else:
-                speech_parts = [content]
+            content = content.replace(':|', ': ')
+            speech_parts = check_interruptions(content.strip())
             # no interruptions
             if len(speech_parts) == 1:
                 u = SubElement(
@@ -189,71 +239,33 @@ def build_tree(speeches, year):
                     u.set('start', speech_start)
                 if speech_end:
                     u.set('end', speech_end)
-
                 u.text = content.strip()
+
             # interruptions
             else:
-                part = 1
-                if speech_parts[len(speech_parts)-1].isspace() or not speech_parts[len(speech_parts)-1]:
-                    del speech_parts[len(speech_parts)-1]
-                # speech and chairman comment at end
-                # Ensimmäinen varapuhemies:|Kaksi minuuttia on kulunut!
-                if len(speech_parts) == 2:
-                    u = SubElement(
-                        div, 'u', {'who': '#{:s}'.format(speaker), 'xml.id': speech_id})
-                    u.text = speech_parts[0]
-
-                    temp = re.sub(': \|', ':|', speech_parts[1])
-                    chair = temp.split(':|')
-                    print(chair)
-                    vocal = SubElement(div, 'vocal')
-                    desc_v = SubElement(
-                        vocal, 'desc', {'who': '#'+chairman_tag(chair[0])})
-                    desc_v.text = chair[1]
-
-                else:
-                    for i in range(len(speech_parts)):
-                        # speeches should be at pairwise indexes
-                        if i % 2 == 0:
-                            # the first part
-                            if i == 0:
-                                u = SubElement(
-                                    div, 'u', {'who': '#{:s}'.format(speaker), 'xml.id': '{:s}.{:d}'.format(speech_id, part),
-                                               'next': '{:s}.{:d}'.format(speech_id, part+1)})
-                                if speech_start:
-                                    u.set('start', speech_start)
-                                if speech_end:
-                                    u.set('end', speech_end)
-                                u.text = speech_parts[i].strip()
-                                part += 1
-                            # the last part at all or before chairman ends speech
-                            # or i == len(speech_parts)-2):
-                            elif i == len(speech_parts)-1:
-                                u = SubElement(
-                                    div, 'u', {'who': '#{:s}'.format(speaker), 'xml.id': '{:s}.{:d}'.format(speech_id, part), 'prev': '{:s}.{:d}'.format(speech_id, part-1)})
-                                if speech_start:
-                                    u.set('start', speech_start)
-                                if speech_end:
-                                    u.set('end', speech_end)
-                                u.text = speech_parts[i].strip()
-                            else:
-                                u = SubElement(
-                                    div, 'u', {'who': '#{:s}'.format(speaker), 'xml.id': '{:s}.{:d}'.format(speech_id, part), 'next': '{:s}.{:d}'.format(speech_id, part+1), 'prev': '{:s}.{:d}'.format(speech_id, part-1)})
-                                if speech_start:
-                                    u.set('start', speech_start)
-                                if speech_end:
-                                    u.set('end', speech_end)
-                                u.text = speech_parts[i]
-                                part += 1
-                        # interruption
+                speech_part = 1
+                for i, part in enumerate(speech_parts):
+                    if part.startswith('INTER'):  # interruption part
+                        vocal = SubElement(div, 'vocal')
+                        desc_v = SubElement(
+                            vocal, 'desc')
+                        desc_v.text = part.replace('INTER', '')
+                    else:  # speech part
+                        if len(speech_parts) == 2:
+                            # only one speech section and one interruption, no need for extra id digit
+                            u = SubElement(
+                                div, 'u', {'who': '#{:s}'.format(speaker), 'xml.id': speech_id})
                         else:
-                            temp = re.sub(': \|', ':|', speech_parts[i])
-                            chair = temp.split(':|')
-                            vocal = SubElement(div, 'vocal')
-                            desc_v = SubElement(
-                                vocal, 'desc', {'who': '#'+chairman_tag(chair[0])})
-                            desc_v.text = chair[1]
-
+                            u = SubElement(
+                                div, 'u', {'who': '#{:s}'.format(speaker), 'xml.id': speech_id + '.' + str(speech_part)})
+                            if i > 1:  # there's a previous section
+                                u.set('prev', speech_id +
+                                      '.' + str(speech_part-1))
+                            if i < len(speech_parts)-2:  # there's a follow-up section
+                                u.set('next', speech_id +
+                                      '.' + str(speech_part+1))
+                            speech_part += 1
+                        u.text = part
         else:
             u = SubElement(
                 div, 'u', {'who': '#{:s}'.format(speaker), 'xml.id': speech_id, 'ana': '#' + chairman_tag(party)})

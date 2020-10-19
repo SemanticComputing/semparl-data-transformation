@@ -29,10 +29,10 @@ def extract_content(speech_section):
     content = ''
     for child in speech_section.children:
         if 'PuheenjohtajaRepliikki' in child.name:
-            content += '<<' + child.find('vsk1:PuheenjohtajaTeksti').string + ':|' \
-                + child.find('sis:KappaleKooste').string + '>>'
+            content += '(' + child.find('vsk1:PuheenjohtajaTeksti').string + ': ' \
+                + child.find('sis:KappaleKooste').string + ')'
         elif ('KappaleKooste' in child.name and child.string):
-            content += ' ' + child.string
+            content += child.string + '\n'
 
     """ content_parts = []
     content = ''
@@ -43,7 +43,7 @@ def extract_content(speech_section):
     for part in content_parts:
         if isinstance(part, str):  # covering erroneus tagging in original xml
             content += '{:s} '.format(part) """
-    return content
+    return content.rstrip('\n')
 
 
 def extract_cp_content(speech):
@@ -92,7 +92,7 @@ def main(year):
         '2017': 147,
         '2018': 181,
         '2019': 87,
-        '2020': 104  # !!!!!! checked 1.7.2020
+        '2020': 115  # !!!!!! checked 20.9.2020
     }
     all_speeches = []
     for i in range(1, session_count[year]+1):
@@ -170,7 +170,6 @@ def main(year):
                                                  ' ', doc_status, doc_version, link, langs, ' '.join(
                                                      speaker)])
                     else:
-                        #speech_type = speech.attrs['vsk1:puheenvuoroLuokitusKoodi']
                         response = ' '
                         if (speech.find('vsk1:TarkenneTeksti')
                                 and 'astauspuheenvuoro' in speech.find('vsk1:TarkenneTeksti').string):
@@ -212,13 +211,11 @@ def main(year):
                                              doc_status, doc_version, link, langs, first + ' ' + last, speaker_id,
                                              details['startTime'], details['endTime'], details['status'], details['textVersion']])
                     counter += 1
-                    print(counter)
+                    # print(counter)
 
     with open('speeches_{}.csv'.format(year), 'w', newline='') as file:
         writer = csv.writer(file, delimiter=',')
         writer.writerows(all_speeches)
-        # writer.writerow([details['speechID'], details['speechOrder'], speaker_id, first, last, party, details['startTime'], details['endTime'], content,
-        #                 details['language'], speech_type, details['status'], other_id, details['textVersion']])
 
 
 if __name__ == "__main__":

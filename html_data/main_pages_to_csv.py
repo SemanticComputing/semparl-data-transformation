@@ -89,9 +89,12 @@ def parse_speech(s):
                     relevant = p.text[p.text.index('lausu')+7:]
                     speaker = relevant.split()
                 else:
-                    speech += ' {:s}'.format(p.text)
-            no_linebreaks = re.sub('\n *', ' ', speech)
-            speech = re.sub('\t', '', no_linebreaks)
+                    text = re.sub('\n *', ' ', p.text)
+                    text = re.sub('\t|\* \* \*|__+', '', text)
+                    speech += '{:s}\n'.format(text)  # p.text)
+            #no_linebreaks = re.sub('\n *', ' ', speech)
+            #speech = re.sub('\t', '', no_linebreaks)
+            speech = speech.rstrip('\n')
             if speaker:
                 return speaker[-2], speaker[-1], ' '.join(speaker[:-2]).capitalize(), speech.strip()
             else:

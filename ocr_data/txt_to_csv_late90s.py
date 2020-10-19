@@ -245,9 +245,8 @@ def mark_removable_hyphens(new):
             new[i] += '<REMOVE>'
 
 
-def edit_content(content):
-    # 11. Torstaina 22.4.1999
-    new = []
+def not_content(content, i):
+    # returns true if row in question is NOT part of speech
     date_pagehead = re.compile(
         '[0-9]* ?[A-Z][a-z]+na [0-9]+\..*kuuta [0-9]{4}')
     date_pagehead2 = re.compile(
@@ -256,20 +255,32 @@ def edit_content(content):
     pagehead1 = re.compile(
         '[0-9]* ?[A-Z][a-z]+na [0-9]+\.')
     pagehead2 = re.compile('[a-z]+kuuta [0-9]{4}')
+    if '\f' in content[i]:
+        return True
+    elif date_pagehead.match(content[i]) or date_pagehead2.match(content[i]):
+        return True
+    elif (pagehead1.match(content[i]) and i+2 < len(content) and pagehead2.match(content[i+2])):
+        return True
+    elif number_lines.match(content[i]):
+        return True
+    elif 'merkitään läsnä ' in content[i] \
+            or ('Edustajat' in content[i-1] and 'läsnä olev' in content[i]) \
+            or ('Edustajat' in content[i] and i+1 < len(content) and 'läsnä olev' in content[i+1]):
+        return True
+    else:
+        return False
+
+
+def edit_content(content):
+    # 11. Torstaina 22.4.1999
+    new = []
     # print(content)
     for i in range(len(content)):
-        if '\f' in content[i]:
+        if not_content(content, i):
             continue
-        elif date_pagehead.match(content[i]) or date_pagehead2.match(content[i]):
-            continue
-        elif (pagehead1.match(content[i]) and i+2 < len(content) and pagehead2.match(content[i+2])):
-            continue
-        elif not content[i].strip() or number_lines.match(content[i]):
-            continue
-        elif 'merkitään läsnä ' in content[i] \
-                or ('Edustajat' in content[i-1] and 'läsnä olev' in content[i]) \
-                or ('Edustajat' in content[i] and i+1 < len(content) and 'läsnä olev' in content[i+1]):
-            continue
+        elif (not content[i].strip() and content[i-1] and not not_content(content, i-1)
+                and i+1 < len(content) and not not_content(content, i+1)):
+            new.append('\n')
         else:
             row = re.sub('=|€', '', content[i])
             if row:

@@ -89,9 +89,10 @@ def check_type(party):
 def parse_speech(speech_parts):
     speech = []
     for part in speech_parts:
-        speech.append(part.text)
+        text = part.text.replace('\t', '')
+        speech.append(re.sub('\n *', ' ', text))
 
-    return re.sub('\n *', ' ', ' '.join(speech))
+    return '\n'.join(speech)  # re.sub('\n *', ' ', ' '.join(speech))
 
 
 def parse_pm_speech(speech_section):
@@ -117,7 +118,7 @@ def parse_pm_speech(speech_section):
 def main(file):
     parliament_year = file[-9:-5]
 
-    link_file = '../data/2000-2014/links/links_{:s}.txt'.format(
+    link_file = '../../data/2000-2014/links/links_{:s}.txt'.format(
         parliament_year)
     with open(link_file, 'r') as links_f:
         contents = links_f.read()

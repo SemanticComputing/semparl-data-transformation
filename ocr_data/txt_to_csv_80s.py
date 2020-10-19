@@ -303,30 +303,42 @@ def mark_removable_hyphens(new):
             new[i] += '<REMOVE>'
 
 
-def edit_content(content):
-    new = []
+def not_content(content, i):
+    """Returns true if content[i] is not part of speech
+    """
     date_pagehead = re.compile(
-        '[0-9]* ?[A-Z][a-z]+na [0-9]+\..*kuuta [0-9]{4}')
+        '[0-9]* ?[A-Z][a-z]+na [0-9]+[\.,].*kuuta [0-9]{4}')
     pagehead1 = re.compile(
-        '[0-9]* ?[A-Z][a-z]+na [0-9]+\.')
+        '[0-9]* ?[A-Z][a-z]+na [0-9]+[\.,]')
     pagehead2 = re.compile('[a-z]+kuuta [0-9]{4}')
     number_lines = re.compile('^[0-9\/\.W ]+$')
+    if '\f' in content[i]:
+        return True
+    elif date_pagehead.match(content[i]):
+        return True
+    elif (pagehead1.match(content[i]) and i+2 < len(content) and pagehead2.match(content[i+2])):
+        return True
+    elif number_lines.match(content[i]):
+        return True
+    elif 'merkitään läsnä ' in content[i] \
+            or ('Edustajat' in content[i-1] and 'läsnä olev' in content[i]) \
+            or ('Edustajat' in content[i] and i+1 < len(content) and 'läsnä olev' in content[i+1]):
+        return True
+    elif 'saapuu paikalleen istuntosaliin' in content[i] or 'Puheenvuoron saatuaan lausuu' in content[i]:
+        return True
+    else:
+        return False
+
+
+def edit_content(content):
+    new = []
     # print(content)
     for i in range(len(content)):
-        if '\f' in content[i]:
+        if not_content(content, i):
             continue
-        elif date_pagehead.match(content[i]):
-            continue
-        elif (pagehead1.match(content[i]) and i+2 < len(content) and pagehead2.match(content[i+2])):
-            continue
-        elif not content[i].strip() or number_lines.match(content[i]):
-            continue
-        elif 'merkitään läsnä ' in content[i] \
-                or ('Edustajat' in content[i-1] and 'läsnä olev' in content[i]) \
-                or ('Edustajat' in content[i] and i+1 < len(content) and 'läsnä olev' in content[i+1]):
-            continue
-        elif 'saapuu paikalleen istuntosaliin' in content[i] or 'Puheenvuoron saatuaan lausuu' in content[i]:
-            continue
+        elif (not content[i].strip() and content[i-1] and not not_content(content, i-1)
+                and i+1 < len(content) and not not_content(content, i+1)):
+            new.append('\n')
         else:
             row = re.sub('=|€|<<|^>> ', '', content[i])
             if row:

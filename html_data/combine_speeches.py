@@ -150,7 +150,7 @@ def main(year):
         if row[1] == '89/2009':
             row[2] = '2009-10-08'
 
-        print(row[0])
+        # print(row[0])
 
     with open('speeches_{:s}.csv'.format(year), 'w') as save_to:
         writer = csv.writer(save_to, delimiter=',')
