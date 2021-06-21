@@ -17,7 +17,7 @@ The whole pipeline produces four files for each parliamentary session;
 The process requires csv-files:
  - ```python_csv_parliamentMembers.csv``` containing parliament member info, e.g. personal URIs, parties, party URIs and so on, for linking.
  - ```parliamentary_sessions.csv``` containing parliamentary seasons info for linking
- - The files can be found in ????
+ - The files can be found [here](https://version.aalto.fi/gitlab/seco/semparl-speeches-source-backups) (Access restricted) 
 
 
  &nbsp;
@@ -41,17 +41,22 @@ As the first line of a Pöytäkirja contained crucial metadata. I.e.:
 
 **Step 1: Form a CSV from fixed ocr'ed text files and transform it to RDF and XML**
 
-Create the following folders or edit the paths in ```ocr_data/txt_to_rdf.sh``` and in the scripts run by it to suit your needs.
+Create the following folders
+
+???????
+
+
+ or edit the paths in ```ocr_data/txt_to_rdf.sh``` and in the scripts run by it to suit your needs.
 
 - For years 1907-1998:
 
-Run ```./ocr_data/txt_to_rdf.sh```
+    Run ```./ocr_data/txt_to_rdf.sh```
 
 - For year 1999:
 
-Parliamentary session 1999's plenary sessions are available in HTML from 86/1999 onwards. For best results firts half of 1999 is from ocr'ed data the rest from html. These are combined before creating final XML and RFD files.
+    Parliamentary session 1999's plenary sessions are available in HTML from 86/1999 onwards. For best results first half of 1999 is created from ocr'ed data and  the rest from html. These halfs are combined before creating final XML and RFD files.
 
-Run TBA
+    Run ```TBA```
 ....
 
 &nbsp;
@@ -63,7 +68,7 @@ ____
 **Step 0: Produce the HTML data**
 
 Data is spread on individual plenary session's main page and separate discussion pages, one topic per discussion page.
-Scrape the HTML data from Eduskunta.fi-web pages or use the already gathered and pruned data from ?????? This data was downloaded in May/June 2020 and pruned of unneeded source code (footers, nav bars., etc.). The scripts full functionality can be guaranteed only for that version of the data. In either case it is recommended to download the data to ensure ease of reuse as the downloading process from eduskunta.fi was very slow.
+Scrape the HTML data from Eduskunta.fi-web pages or use the already gathered and pruned data from [here](https://version.aalto.fi/gitlab/seco/semparl-speeches-source-backups) (Access restricted) This data was downloaded in May/June 2020 and pruned of unneeded source code (footers, nav bars., etc.). The scripts full functionality can be guaranteed only for that version of the data. In either case it is recommended to download the data to ensure ease of reuse as the downloading process from eduskunta.fi was very slow.
 
 To scrape the data:
 
@@ -73,7 +78,11 @@ Run ```html_data/download_content.py``` to gather the html-content from the disc
 
 **Step 1: Form a CSV from from HTML files and transform it to RDF and XML**
 
-Create  or edit paths in ```html_to_all_csv.sh``` and in the scripts run by it to suit your needs.
+Create 
+
+??????
+
+ or edit paths in ```html_to_all_csv.sh``` and in the scripts run by it to suit your needs.
 
 Run ```./html_data/html_to_rdf_xml.sh```
 

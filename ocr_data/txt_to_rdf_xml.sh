@@ -9,7 +9,7 @@
 
 
 # Chooce correct time range
-for (( year=1918; year<=1934; year++ )) 
+for (( year=1907; year<=1998; year++ )) 
 do
     if [[ $year -eq 1915 || $year -eq 1916 ]]; then
         echo ">> No data for year $year <<"

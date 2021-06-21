@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for (( year=1999; year<=1999; year++ ))
+for (( year=2000; year<=2014; year++ ))
 do
     echo $year
     python3 ../../data/2000-2014/discussions_$year.html
