@@ -5,17 +5,20 @@ Tools for gathering and formatting data for the Semantic Parliament dataservice 
 1. Gather raw data
 2. Extract relevant data to CSV
 3. Create xml-file of data in [ParlaCLARIN-format](https://clarin-eric.github.io/parla-clarin/)
-4. Create ttl-files of data
+4. Create ttl-files of data in RDF-format
 
-
+&nbsp;
  # Instructions
- [PDF-based data](#PDF-based-data) 
 
- [HTML-based data](#HTML-based-data)
+The whole pipeline produces four files for each parliamentary session;
+- The Parla-CLARIN version is in its entarity in file ```Speeches_<year>.xml``` 
+- The RDF version is spread into three files: ```speeches_<year>.ttl, items_and_documents_<year>.ttl```  and ``` sessions_and_transcripts_<year>.ttl```. 
 
- [XML-based data](#XML-based-data)
- 
- ---
+The process requires csv-files:
+ - ```python_csv_parliamentMembers.csv``` containing parliament member info, e.g. personal URIs, parties, party URIs and so on, for linking.
+ - ```parliamentary_sessions.csv``` containing parliamentary seasons info for linking
+ - The files can be found in ????
+
 
  &nbsp;
 
@@ -32,61 +35,65 @@ As the first line of a Pöytäkirja contained crucial metadata. I.e.:
 
 ```111. Maanantaina 16 päivänä joulukuuta 1991```
 
- all the txt-files were run through ```print_session-titles.py```. The program printed all of these first lines that were intact. The missing first lines could be easily inferred from the print out and fixed in the txt-file (usually the line was splitted). This process for a whole decade took max. 1 hour and made the following processings remarkably easier.
-
-**Step 1: Form raw CSV with period specific script**
-- Valtiopäivät 1960-1975_I
-
-- Valtiopäivät 1975_II-1988
-- Valtiopäivät 1980-1988
-- Valtiopäivät 1989-1994
-- Valtiopäivät 1995-1998
-- Valtiopäivät 1999 
-
-  &nbsp;
-
-**Step 2: Form final csv**
-
-Clean raw CSV with
+ All the txt-files were run through ```ocr_data/print_session-titles.py```. The program printed all of these first lines that were intact. The missing first lines could be easily inferred from the print out and fixed in the txt-file (usually the line was split). This process for  made the following tranformations remarkably easier and more reliable. Files ```PTK_1908_2.txt``` adn ```PTK_1908_3.txt``` both included plenary sessions 24-28, the duplicates were manuaylly removed from ```PTK_1908_2.txt```.
 
 &nbsp;
 
-**Step 3: Clean common errors**
+**Step 1: Form a CSV from fixed ocr'ed text files and transform it to RDF and XML**
+
+Create the following folders or edit the paths in ```ocr_data/txt_to_rdf.sh``` and in the scripts run by it to suit your needs.
+
+- For years 1907-1998:
+
+Run ```./ocr_data/txt_to_rdf.sh```
+
+- For year 1999:
+
+Parliamentary session 1999's plenary sessions are available in HTML from 86/1999 onwards. For best results firts half of 1999 is from ocr'ed data the rest from html. These are combined before creating final XML and RFD files.
+
+Run TBA
+....
 
 &nbsp;
-
-
-**Step 3a: Create XML-file**
-
-**Step 3b: Create TTL-files**
-
-&nbsp;
-
 ## HTML-based data
 ____ 
 - Valtiopäivät 2000-2014
 - source: html-data
 
-Data was spread on individual session's main page and separate discussion pages, one topic per discussion page.
-```ptk_links.py``` was used to gather main page html-content of one Valtiopäivät/Parliamentory year to one file and possible discussion page links to another. ```download_content.py``` was used to gather the html-content from the discussion pages using the link file.
+**Step 0: Produce the HTML data**
 
-```main_pages_to_csv.py``` extracted relevant data from mainpage html-file and transformed it to csv. It also produced ```related_documents_details_XXXX.csv``` to be used to fill in related document info for discussion page speeches. 
-```html_to_csv.py``` produces a csv-file from from discussion page html.
-```combine_speeches``` comibines the two csvs to create final ```speeches_XXXX.csv``` containing all the scpeeches for Valtiopäivät XXXX.
+Data is spread on individual plenary session's main page and separate discussion pages, one topic per discussion page.
+Scrape the HTML data from Eduskunta.fi-web pages or use the already gathered and pruned data from ?????? This data was downloaded in May/June 2020 and pruned of unneeded source code (footers, nav bars., etc.). The scripts full functionality can be guaranteed only for that version of the data. In either case it is recommended to download the data to ensure ease of reuse as the downloading process from eduskunta.fi was very slow.
 
-```html_to_all_csv.sh```-script was used to slightly automate this process.
+To scrape the data:
 
- ```csv_to_xml.py``` took  the final ```speeches_XXXX.csv```-file and transformed the data to ParlaClarin-xml format, ```Speeches_XXXX.xml```.
+Run ```html_data/ptk_links.py``` to gather main page html-content of one Valtiopäivät/Parliamentory year to one file and possible discussion page links to another. 
 
- ```create_rdf.py``` transformed the data from the csv to RDF and produced files ```speeches_XXXX.ttl, items_and_documents_XXXX.ttl```  and ``` sessions_and_transcripts_XXXX.ttl```. This program required a csv-file ```python_csv_parliamentMembers.csv``` containing parliament member info, e.g. personal URIs, parties, party URIs and so on, for semantic tagging.
+Run ```html_data/download_content.py``` to gather the html-content from the discussion pages using the link file.
+
+**Step 1: Form a CSV from from HTML files and transform it to RDF and XML**
+
+Create  or edit paths in ```html_to_all_csv.sh``` and in the scripts run by it to suit your needs.
+
+Run ```./html_data/html_to_rdf_xml.sh```
+
 
  &nbsp;
 
 ## XML-based data
 ___
-- Valtiopäivät 2015-2020
+- Valtiopäivät 2015-2021
 - source: xml-data
 
-```xml_to_CSV.py``` downloaded and converted xml data to ```speeches_XXXX.csv```, again, one Valtiopäivät per file.
+Run ```./xml_data/xml_to_rdf_xml.sh```
 
-XML and TTL created as above.
+&nbsp;
+ # Update with new plenary sessions
+
+ Edit the loop range in ```./xml_data/xml_to_rdf_xml.sh``` to suit your needs to avoid redoing old years.
+
+ Edit the amount of sessions to download for your desired year in ```./xml_data/xml_to_CSV.py```
+
+ Run ```./xml_data/xml_to_rdf_xml.sh```
+
+

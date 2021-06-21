@@ -37,7 +37,7 @@ def question_enders(row):
     return False
 
 
-def topic_starter(row):
+def topic_starter(row, prev_row, second_prev_row):
     problem_rows = [
         '1) Työttömyysturvan peruspäivärahan ta-',
         '2) Eri sosiaalivakuutusjärjestelmien yh-',
@@ -70,8 +70,20 @@ def topic_starter(row):
     # 7) N:o 61 Ed. Pulliainen: Asioiden käsittely
     topic = re.compile('^[0-9]+\) [A-ZÅÄÖ].*')
     interpellation = re.compile(
-        '^[EF]d. [A-ZÅÄÖ].+ ym. välikysymys')  # välikysymys
-    if topic.match(row) or interpellation.match(row):
+        '^[EF]d. (af|von)? ?[A-ZÅÄÖ].+ (ym. )?välikysymys')  # välikysymys
+    chair_questions2 = re.compile('Kirjallisia kysymyksiä ja niihin annettuja vas')    
+    members = re.compile('(Erikois)?[vV]aliokunta?ie?n jäsenet\.?$')
+    agenda = re.compile('Päiväjärjestyksessä olevat? asiat?[:;]')
+    announcements = re.compile('[HIF]l?moitusasiat? ?[:;]')
+    new = re.compile('Uusia? hallituksen esity(ksiä|s)[\.,]$')
+    question = re.compile('Kirjalliset kysymykset')
+    
+    if agenda.match(prev_row) or (not prev_row and agenda.match(second_prev_row)):
+        return True
+    if topic.match(row) or interpellation.match(row) or new.match(row)\
+        or announcements.match(row) or members.match(row)\
+        or question.match(row)\
+        or 'Ikäpuhemiehen alkajaissanat' in row:
         return True
     return False
 
@@ -81,6 +93,9 @@ def topic_enders(row, row2):
             or 'Valjokuntaan lähettäminen' in row or 'Lähetekeskustelu' in row:
         return True
     if re.compile('lähetetään [a-zåäö]+neuvoston ehdotuksen').match(row):
+        return True
+    if re.compile('T?E?L?o(in|m)m?anpyyn(rt)?(nä?öt|tö)[\.,]?').match(row)\
+        or row.startswith('Vapautusta eduskuntatyöstä saa'): # 'Lomanpyynnöt:
         return True
     if speech_starters(row, row2):
         return True
@@ -98,11 +113,12 @@ def topic_details(row):
 
 
 def speech_starters(row, row2):
-    speech_start = re.compile("^[E|F]d. [A-ZÅÄÖ].*[:;]")
-    speech_start2 = re.compile("^[A-ZÅÄÖ].*iniste[tr]i [A-ZÅÄÖ].*[:;]")
-    long_title = re.compile('^[A-ZÅÄÖ].*iniste[tr]i [A-ZÅÄÖ].*-$')
+    speech_start = re.compile("^[E|F]d[\.,] ?(af|von)? ?[A-ZÅÄÖ].*[:;]")
+    speech_start2 = re.compile(
+        "^[A-ZÅÄÖ].*iniste[tr]i (af|von)? ?[A-ZÅÄÖ].*[:;]")
+    long_title = re.compile('^[A-ZÅÄÖ].*iniste[tr]i (af|von)? ?[A-ZÅÄÖ].*-$')
     long_title2 = re.compile('^[A-ZÅÄÖa-zåäö]+[;:]')
-    two_lines1 = re.compile("^[E|F]d. [A-ZÅÄÖ].*\(va")
+    two_lines1 = re.compile("^[E|F]d[\.,] (af|von)? ?[A-ZÅÄÖ].*\(va")
     two_lines2 = re.compile("[a-z]*ro\) ?:")
     chairman = re.compile(
         '(Ensimmäinen |Toinen )?(Puhemies|varapuhemies) ?(\(koputtaa\))? ?[;:]')
@@ -160,7 +176,8 @@ def page_header(row):
 def acceptance(row):
     if 'Selonteko myönnetään oikeaksi.' in row or 'Menettelytapa hyväksytään.' in row \
             or 'Eduskunta on hyväksynyt mietinnön.' in row \
-            or 'Eduskunta on käsittelyn pohjaksi hy' in row:
+            or 'Eduskunta on käsittelyn pohjaksi hy' in row\
+            or 'Sihteeri lukee' in row or 'Äänestys ja päätös:' in row:
         return True
     return False
 
@@ -266,18 +283,22 @@ def mark_removable_hyphens(new):
 
 def not_content(content, i):
     date_pagehead = re.compile(
-        '[0-9]* ?[A-Z][a-z]+na [0-9]+\..*kuuta [0-9]{4}')
+        '[0-9]* ?[A-Z][a-z]+na [0-9]+\..*kuuta [0-9]{4}$')
+    date_pagehead2 = re.compile(
+        '\d+\. [A-Z][a-z]+na \d+\.\d+\.\d{4}$')
     pagehead1 = re.compile(
         '[0-9]* ?[A-Z][a-z]+na [0-9]+\.')
     pagehead2 = re.compile('[a-z]+kuuta [0-9]{4}')
     number_lines = re.compile('^[0-9\/\.C ]+$')
     if '\f' in content[i]:
         return True
-    elif date_pagehead.match(content[i]):
+    elif date_pagehead.match(content[i]) or date_pagehead2.match(content[i]):
         return True
     elif (pagehead1.match(content[i]) and i+2 < len(content) and pagehead2.match(content[i+2])):
         return True
     elif number_lines.match(content[i]):
+        if content[i-1] and re.search('(?:n:o(?:t \d+[\—\-])?| ja| sekä)$', content[i-1]):
+            return False
         return True
     elif 'merkitään läsnä ' in content[i] \
             or ('Edustajat' in content[i-1] and 'läsnä olev' in content[i]) \
@@ -293,16 +314,39 @@ def edit_content(content):
     for i in range(len(content)):
         if not_content(content, i):
             continue
-        elif (not content[i].strip() and content[i-1] and not not_content(content, i-1)
-                and i+1 < len(content) and not not_content(content, i+1)):
+        elif (not content[i].strip() and content[i-1].strip() and not not_content(content, i-1)
+                and i+1 < len(content) and not not_content(content, i+1) and content[i+1][0].isupper()): 
+                #empty row (and) is not the first (and) row-1 is real content (and) row is not last row 
+                # (and) row+1 has real content (and) starts with capital
             new.append('\n')
         else:
             row = re.sub('=|€', '', content[i])
-            if row:
-                new.append(row)
+            row = re.sub('  +', ' ', row)
+            if row.strip():
+                new.append(row.strip())
 
     mark_removable_hyphens(new)
     return new
+
+def start_of_swedish_translation(row, row2):
+    p=re.compile('on [rt]uotsinkielisenä näin kuuluva[;:]')
+    #p2=re.compile('Ruotsinkielinen vastaus o(li|n) näin kuuluva[;:]')
+    p1_1=re.compile('on [rt]uotsin[a-zä]*\-')
+    p1_2=re.compile('näin kuuluva[:;]')
+    p2_1=re.compile('on [rt]uot[a-zä]*\-')
+    p2_2=re.compile('kielisenä näin kuuluva[:;]')
+    p3_1=re.compile('on [rt]uotsinkielisenä')
+    p3_2=re.compile('kuuluva[:;]')
+
+    if re.search(p, row):
+        return True
+    if re.search(p1_1, row) and re.search(p1_2,row2):
+        return True
+    if re.search(p2_1, row) and re.search(p2_2,row2):
+        return True
+    if re.search(p3_1, row) and re.search(p3_2,row2):
+        return True
+    return False
 
 
 def edit_related_documents(topic):
@@ -464,8 +508,8 @@ def main(filename):
             current_topic = []
         if acceptance(rows[i]):
             speech = False
-        # if 'Puhetta johtaa' in rows[i]:
-        #    session_chairman = chairman_name(rows[i], rows[i+1])
+        if start_of_swedish_translation(rows[i], rows[i+1]):
+            speech=False
         if speech_starters(rows[i], rows[i+1]):
             speech = True
             topic = False
@@ -483,7 +527,7 @@ def main(filename):
         if (speech and 'Pöytäkirjan vakuudeksi:' in rows[i]):
             speech = False
         if (not index and not discussion):
-            if topic_starter(rows[i]):
+            if topic_starter(rows[i], rows[i-1] or '', rows[i-2] or ''):
                 speech = False
                 topic = True
             if (topic_enders(rows[i], rows[i+1])):
@@ -512,7 +556,7 @@ def main(filename):
                     [session, date, speaker, ' '.join(current_topic), content, start_page, link])
                 current_speech = []
         if (not index and not discussion):
-            if topic_starter(rows[i]):
+            if topic_starter(rows[i], rows[i-1] or '', rows[i-2] or ''):
                 current_topic = []
         if (topic and '\f' not in rows[i] and rows[i]):
             current_topic.append(rows[i])

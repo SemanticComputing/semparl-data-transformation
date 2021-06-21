@@ -9,6 +9,7 @@ from pprint import pprint
 
 
 def extract_speech_details(tag_content):
+
     details = {
         "speechOrder": tag_content['vsk1:puheenvuoroJNro'].strip(),
         "startTime": tag_content['vsk1:puheenvuoroAloitusHetki'].strip(),
@@ -20,8 +21,12 @@ def extract_speech_details(tag_content):
     }
     if 'vsk1:puheenvuoroLopetusHetki' in tag_content.keys():
         details['endTime'] = tag_content['vsk1:puheenvuoroLopetusHetki'].strip()
-    else:
-        details['endTime'] = ''
+    # if 'met1:toinenKieliKoodi' in tag_content.keys():
+    #     details['language'] = details['language'] + ':' + \
+    #         tag_content['met1:toinenKieliKoodi'].strip()
+    # Issue: kieliKoodi is always 'fi', if speech uses swedish there is toinenKieliKoodi with value 'sv', but there is still
+    # always 'fi' also whether finnish was used or not
+
     return details
 
 
@@ -29,27 +34,15 @@ def extract_content(speech_section):
     content = ''
     for child in speech_section.children:
         if 'PuheenjohtajaRepliikki' in child.name:
-            content += '(' + child.find('vsk1:PuheenjohtajaTeksti').string + ': ' \
-                + child.find('sis:KappaleKooste').string + ')'
+            content += '<<' + child.find('vsk1:PuheenjohtajaTeksti').string + ':| ' \
+                + child.find('sis:KappaleKooste').string + '>>'
         elif ('KappaleKooste' in child.name and child.string):
             content += child.string + '\n'
 
-    """ content_parts = []
-    content = ''
-    for child in speech_section.descendants:
-        if child.name == 'KappaleKooste':
-            content_parts.append(child.string)
-
-    for part in content_parts:
-        if isinstance(part, str):  # covering erroneus tagging in original xml
-            content += '{:s} '.format(part) """
     return content.rstrip('\n')
 
 
 def extract_cp_content(speech):
-    """  print('**********************')
-    contents = speech.find_all('sis:KappaleKooste')
-    print(contents) """
     content = ''
     speech.find('vsk1:PuheenjohtajaTeksti').extract()
     content = speech.strings
@@ -77,12 +70,36 @@ def date_times(section):
 
 
 def speech_part(tag):
-    if 'PuheenvuoroToimenpide' in tag.name:
+    if 'PuheenvuoroToimenpide' in tag.name or 'PuhujaRepliikki' in tag.name:
         return True
     elif ('PuheenjohtajaRepliikki' in tag.name
             and not tag.find_parent('vsk:PuheenvuoroToimenpide')):
         return True
     return False
+
+
+def sub_section_to_previous(previous_num, new_num):
+    # check whether the new section is a subsection of previous top level topic
+
+    if '.' in new_num and previous_num == new_num.partition('.')[0]:
+        return True
+    return False
+
+
+def find_language(content):
+    langs = ''
+    try:
+        parameters = {'text': content}
+        results = requests.get(
+            'http://demo.seco.tkk.fi/las/identify', params=parameters).json()
+        tags = []
+        tags = [k for d in results['details']
+                ['languageDetectorResults'] for k in d.keys()]
+        langs = ':'.join(tags)
+    except:
+        langs = ''
+
+    return langs
 
 
 def main(year):
@@ -92,10 +109,13 @@ def main(year):
         '2017': 147,
         '2018': 181,
         '2019': 87,
-        '2020': 115  # !!!!!! checked 20.9.2020
+        '2020': 170,
+        '2021': 75  # Checked 14.6.2021
     }
     all_speeches = []
+    #print('vajaa lista')
     for i in range(1, session_count[year]+1):
+        # download minutes for one session
         id_doc = 'PTK {:d}/{} vp'.format(i, year)
         parameters = {'perPage': 10, 'page': 0,
                       'columnName': 'Eduskuntatunnus', 'columnValue': id_doc}
@@ -103,60 +123,80 @@ def main(year):
             'https://avoindata.eduskunta.fi/api/v1/tables/VaskiData/rows', params=parameters)
         json_data = json.loads(response.content)
         rows = json_data['rowData']
+
         for row in rows:
             soup = BeautifulSoup(row[1], "xml")
-            # **************************
-            """ file = open('vaski.xml', "a")
-            file.write(soup.prettify())
-            file.write('****************************************')
-            file.close() """
-            # ***********************************
+            topic, item_num, topsection_topic = '', '', ''
             session = '{:d}/{}'.format(i, year)
             date, session_start, session_end = date_times(
                 soup.find('asi:IdentifiointiOsa'))
+
             if soup.find('ptk:Poytakirja'):
                 doc_status = soup.find(
                     'ptk:Poytakirja').attrs['met1:tilaKoodi']
                 doc_version = soup.find(
                     'ptk:Poytakirja').attrs['met1:versioTeksti']
             counter = 1
-            items = soup.find_all('vsk:Asiakohta')
+            # find all items
+            items = soup.find_all(['vsk:Asiakohta', 'vsk:MuuAsiakohta'])
+
             for item in items:
+
+                # carry topic info into sub sections that are in their own element
+                if item['vsk1:kohtatyyppiKoodi'] == 'Alikohta':
+                    if not topsection_topic:
+                        topsection_topic = topic
+                        topsection_item_num = item_num
+                        # check number hierarchy
+                    if sub_section_to_previous(topsection_item_num, item.find('vsk1:KohtaNumero').string.strip()):
+                        topic = item.find(
+                            ['met1:NimekeTeksti', 'sis1:OtsikkoTeksti']).string
+
+                        # Squeeze the sub topic in between top topic and related documents
+                        top_topic_parts = topsection_topic.split('>>>', 1)
+                        topic = top_topic_parts[0] + ' - ' + topic
+                        if len(top_topic_parts) > 1:
+                            topic += '>>>' + top_topic_parts[1]
+                        # Pointless redundancy
+                        topic = topic.replace('Suullinen kyselytunti - ', '')
+
+                # not a subsection
+                else:
+                    topsection_item_num, topsection_topic = '', ''
+                    topic = item.find(
+                        ['met1:NimekeTeksti', 'sis1:OtsikkoTeksti']).string
+
+                # item number, related document, link
                 item_num = item.find('vsk1:KohtaNumero').string.strip()
-                topic = item.find('met1:NimekeTeksti').string
-                related_documents = item.find_all('vsk:KohtaAsia')
+                related_documents = item.find_all(
+                    ['vsk:KohtaAsia', 'vsk:KohtaAsiakirja'])
                 if related_documents:
                     for doc in related_documents:
                         topic += '>>>' + \
                             doc.find('met1:AsiakirjatyyppiNimi').string
-                        if doc.find('met1:EduskuntaTunnus'):
+                        if doc.find(['met1:EduskuntaTunnus', 'sis1:MultiViiteTunnus']):
                             topic += '  ' + \
-                                doc.find('met1:EduskuntaTunnus').string
+                                doc.find(['met1:EduskuntaTunnus',
+                                          'sis1:MultiViiteTunnus']).string
                 link = 'https://www.eduskunta.fi/FI/vaski/PoytakirjaAsiakohta/Sivut/PTK_{}+{}+{}.aspx'.format(
                     i, year, item_num
                 )
 
+                # find speech parts
                 speech_sections = item.find_all(speech_part)
-
                 for speech in speech_sections:
-                    speech_id = '{}.{}.{}'.format(year, i, counter)
+                    speech_id = '{}_{}_{}'.format(year, i, counter)
+
+        # Chairman speech
                     if 'PuheenjohtajaRepliikki' in speech.name:
                         speaker = speech.find(
                             'vsk1:PuheenjohtajaTeksti').string.split()
 
-                        content = extract_cp_content(speech)
+                        content = extract_cp_content(speech).strip()
 
                         # check language
-                        try:
-                            parameters = {'text': content}
-                            results = requests.get(
-                                'http://demo.seco.tkk.fi/las/identify', params=parameters).json()
-                            tags = []
-                            tags = [k for d in results['details']
-                                    ['languageDetectorResults'] for k in d.keys()]
-                            langs = ':'.join(tags)
-                        except:
-                            langs = ''
+                        langs = find_language(content)
+
                         try:
                             all_speeches.append([speech_id, session, date, session_start, session_end,
                                                  speaker[-2], speaker[-1], ' '.join(
@@ -169,13 +209,18 @@ def main(year):
                                                      speaker), topic, content,
                                                  ' ', doc_status, doc_version, link, langs, ' '.join(
                                                      speaker)])
+        # MP speech
                     else:
-                        response = ' '
-                        if (speech.find('vsk1:TarkenneTeksti')
-                                and 'astauspuheenvuoro' in speech.find('vsk1:TarkenneTeksti').string):
-                            response = 'Vastauspuheenvuoro'
-                        speaker_id = speech.find(
-                            'Henkilo').attrs['met1:muuTunnus'].strip()
+                        #speech_type = speech.attrs['vsk1:puheenvuoroLuokitusKoodi']
+                        speech_type = ' '
+                        if speech.find('vsk1:TarkenneTeksti'):
+                            speech_type = re.sub('\(|\)', '', speech.find(
+                                'vsk1:TarkenneTeksti').string).capitalize()
+                        try:
+                            speaker_id = speech.find(
+                                'Henkilo').attrs['met1:muuTunnus'].strip()
+                        except:
+                            speaker_id = ''
                         first = speech.find('org1:EtuNimi').string.strip()
                         last = speech.find(
                             'org1:SukuNimi').string.strip()
@@ -190,26 +235,67 @@ def main(year):
                             party = speech.find(
                                 'org1:AsemaTeksti').string.strip()
 
-                        details = extract_speech_details(
-                            speech.find('vsk:PuheenvuoroOsa').attrs)
-                        content = extract_content(
-                            speech.find('vsk:KohtaSisalto'))
+                        if 'uhemies' in first:  # Fixing mistakes in source data
+                            party = re.search('.*uhemies', first).group(0)
+                            first = re.sub('.*uhemies ', '', first)
 
-                        try:
-                            parameters = {'text': content}
-                            results = requests.get(
-                                'http://demo.seco.tkk.fi/las/identify', params=parameters).json()
-                            tags = []
-                            tags = [k for d in results['details']
-                                    ['languageDetectorResults'] for k in d.keys()]
-                            langs = ':'.join(tags)
-                        except:
-                            langs = ''
+                        if speech.find('vsk:PuheenvuoroOsa'):
+                            details = extract_speech_details(
+                                speech.find('vsk:PuheenvuoroOsa').attrs)
+                            content = extract_content(
+                                speech.find('vsk:KohtaSisalto'))
 
-                        all_speeches.append([speech_id, session, date, session_start, session_end,
-                                             first, last, party, topic, content, response,
-                                             doc_status, doc_version, link, langs, first + ' ' + last, speaker_id,
-                                             details['startTime'], details['endTime'], details['status'], details['textVersion']])
+                        else:  # Small comments about wrong vote or such
+                            details = ''
+                            content = speech.find('sis:KappaleKooste').string
+
+                        langs = find_language(content)
+
+        # A chairman comment trailing the speech. Add it as a separate speech (as it is shown as such in rendered view)
+                        if content.endswith('>>'):
+                            parts = content.rsplit('<<', 1)
+                            chairman_parts = parts[-1].partition(
+                                '|')[0].strip(':').split(' ')
+                            cm_firstname = chairman_parts[-2]
+                            cm_lastname = chairman_parts[-1]
+                            cm_title = ' '.join(chairman_parts[:-2])
+                            cm_content = parts[-1].partition('|')[
+                                2].strip('>>').strip()
+
+                            cm_lang = find_language(cm_content)
+
+                            # Remove chairman trailing comment and other unneeded helper markings
+                            content = parts[0].strip()
+                            content = re.sub(
+                                r'<<(.+?)\|(.+?)>>', r'[\1 \2] ', content)
+
+                            # append speech
+                            # append chairman comment
+                            all_speeches.append([speech_id, session, date, session_start, session_end,
+                                                 first, last, party, topic, content, speech_type,
+                                                 doc_status, doc_version, link, langs, first + ' ' + last, speaker_id,
+                                                 details['startTime'], details['endTime'], details['status'], details['textVersion']])
+                            counter += 1
+                            speech_id = '{}_{}_{}'.format(year, i, counter)
+                            all_speeches.append([speech_id, session, date, session_start, session_end,
+                                                 cm_firstname, cm_lastname, cm_title, topic, cm_content, ' ',
+                                                 doc_status, doc_version, link, cm_lang, ' '.join([
+                                                     cm_title, cm_firstname, cm_lastname]), ' ',
+                                                 '', '', details['status'], details['textVersion']])
+                        else:
+                            content = re.sub(
+                                r'<<(.+?)\|(.+?)>>', r'[\1 \2] ', content)
+
+                            if details:
+                                all_speeches.append([speech_id, session, date, session_start, session_end,
+                                                     first, last, party, topic, content, speech_type,
+                                                     doc_status, doc_version, link, langs, first + ' ' + last, speaker_id,
+                                                     details['startTime'], details['endTime'], details['status'], details['textVersion']])
+                            else:
+                                all_speeches.append([speech_id, session, date, session_start, session_end,
+                                                     first, last, party, topic, content, speech_type,
+                                                     doc_status, doc_version, link, langs, first + ' ' + last, speaker_id,
+                                                     '', '', '', ''])
                     counter += 1
                     # print(counter)
 
@@ -217,6 +303,12 @@ def main(year):
         writer = csv.writer(file, delimiter=',')
         writer.writerows(all_speeches)
 
+    #print('KIELI PUUTTUU x2')
+
 
 if __name__ == "__main__":
     main(sys.argv[1])
+
+
+#
+# ##

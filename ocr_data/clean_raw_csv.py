@@ -13,7 +13,7 @@ def sort_sessions(row):
 
 def form_speechID(session, index):
     n = session.split('/')
-    return '{:s}.{:s}.{:d}'.format(n[1], n[0], index)
+    return '{:s}_{:s}_{:d}'.format(n[1], n[0], index)
 
 
 def clean_date(date):
@@ -43,10 +43,11 @@ def remove_hyphens(content):
     return content.replace('-<REMOVE> ', '',)
 
 
-def clean_actor(actor):
+def clean_actor(actor, date):
     # Ed. Anttila (vastauspuheenvuoro)
     # Ed. FE. Aho
     # Ed. Astala
+    # Ed. von Bell
     # Ed. P. Lahtinen (vastauspuheenvuoro)
     # Ed. Wasz-Höckert (vastauspuheen-
     # Ed. Kuuskoski-Vikatmaa (vastaus-
@@ -77,28 +78,65 @@ def clean_actor(actor):
         actor = tmp
     if 'Ministeri A 1 h o ' in actor or 'Ministeri A 1h o' in actor:
         actor = 'Ministeri Alho'
-    if 'Kuuskoski- Vikatmaa' in actor or 'Kuuskoski- Vikarmaa' in actor:
-        actor = actor.replace('Kuuskoski- Vikatmaa', 'Kuuskoski-Vikatmaa')
+    if re.search('\w( \-|\- )[A-ZÅÄÖ]', actor):  # 'Kuuskoski- Vikatmaa'
+        actor = re.sub(r'(\w) ?\- ?([A-ZÅÄÖ])', r'\1-\2', actor)
 
     first_name = ''
     speech_type = ' '
     role = ''
-
-    if '.' in actor:  # MP
-        parts = actor.split('.')
-        if len(parts) > 2:
-            # there are initials
-            first_name = parts[1].strip()
-        last_name = parts[-1].strip()
-    else:  # ministers etc.
-        parts = actor.split(' ')
-        if '(vastaus' in parts[-1]:
-            # print(parts)
-            last_name = parts[-2].strip()
-            role = ' '.join(parts[:-2])
+    if int(date[:4]) < 1909:
+        #'Ed. Wuolijoki, Wäinö', 'Ed. Aromaa, V.', 'Ed. Rosenqvist, G. G.'
+        #'Ed. Sulo Wuolijoki', 'Ed. v. Troll'
+        if re.search('(von|af|v\.) [A-ZÅÄÖ]', actor):
+            actor = actor.replace('v.', 'von')
+            if '.' in actor:
+                parts = actor.split('.')
+                last_name = parts[1]
+            else:
+                parts = actor.split()
+                last_name = '<KEEPTHIS>'.join(parts[-2:])
+                role = ' '.join(parts[:-2])
+        elif ', ' in actor:
+            first_name = actor.partition(', ')[2]
+            rest = actor.partition(', ')[0]
+            if '.' in rest:  # MP
+                parts = rest.split('.')
+                last_name = parts[-1].strip()
+            else:  # ministers etc.
+                parts = actor.split(' ')
+                last_name = parts[-1].strip()
+                role = ' '.join(parts[:-1])
         else:
+            parts = actor.split(' ')
+            first_name = ' '.join(parts[1:-1])
             last_name = parts[-1].strip()
-            role = ' '.join(parts[:-1])
+            if not '.' in actor:  # not MP
+                role = parts[0]
+
+    else:
+        if re.search('(von|af|v\.) [A-ZÅÄÖ]', actor):
+            actor = actor.replace('v.', 'von')
+            if '.' in actor:
+                parts = actor.split('.')
+                last_name = parts[1]
+            else:
+                parts = actor.split()
+                last_name = '<KEEPTHIS>'.join(parts[-2:])
+                role = ' '.join(parts[:-2])
+        elif '.' in actor:  # MP
+            parts = actor.split('.')
+            if len(parts) > 2:
+                # there are initials
+                first_name = parts[1].strip()
+            last_name = parts[-1].strip()
+        else:  # ministers etc.
+            parts = actor.split(' ')
+            if '(vastaus' in parts[-1]:
+                last_name = parts[-2].strip()
+                role = ' '.join(parts[:-2])
+            else:
+                last_name = parts[-1].strip()
+                role = ' '.join(parts[:-1])
 
     if '(vastaus' in last_name or '(vastaus' in parts[-1]:
         speech_type = 'Vastauspuheenvuoro'
@@ -106,6 +144,9 @@ def clean_actor(actor):
         last_name = p[0]
 
     actor_last = re.sub(' ', '', last_name.rstrip('—'))
+    actor_last = re.sub(r'(von|af)([A-ZÅÄÖ])', r'\1 \2', actor_last)
+    actor_last = re.sub('<KEEPTHIS>', ' ', actor_last)
+
     if (first_name in ['F', 'FE', 'EF'] and actor_last.strip() == 'Aho'):
         first_name = 'E'
     if 'gvist' in actor_last:
@@ -115,12 +156,19 @@ def clean_actor(actor):
     if actor_last == 'S-LAnttila':
         actor_last = 'Anttila'
         first_name = 'S-L'
-    if 'Y mpäristöministeri' in role:
+    if 'Y mpäristöministe' in role:
         role = 'Ympäristöministeri'
-    if actor_last in ['Äsvik', 'Asvik']:
-        actor_last = 'Åsvik'
 
-    return first_name, actor_last, role, speech_type
+    role = re.sub('inisteti', 'inisteri', role)
+    role = re.sub('Sos[lti]a[aä]?li', 'Sosiaali', role)
+    role = re.sub('astainminis', 'asiainminis', role)
+    role = re.sub('etveysminis', 'erveysminis', role)
+    role = re.sub('FE?nsimmäinen', 'Ensimmäinen', role)
+    role = re.sub("—|\+|\*|'", '', role)
+    role = re.sub("^\-?[EF]d[\.,]?$", '', role)
+    role = re.sub("  +", ' ', role)
+
+    return first_name, actor_last, role.strip(), speech_type
 
 
 def check_time(time):
@@ -135,35 +183,28 @@ def check_time(time):
 def find_speaker(member_info, actor_first, last, party, date, not_found):
     if 'uhemies' in party:
         return actor_first, party
-    problem_cases = {
-        'Holkeri': 'Harri',
-        'Norrback': 'Ole',
-        # 'Pohjala': 'Toivo T.',
-        'Tuomisto': 'Konstantin',
-        'Lindblom': 'Seppo',
-        'Björkstrand': 'Gustav'}
 
     if not last.strip():
         return actor_first, party
-    if actor_last in problem_cases.keys():  # Not MP while minister
-        return problem_cases[actor_last], party
 
     if '-' in actor_first:
         temp = actor_first.partition('-')[0]
         actor_first = temp.strip('.')
 
+    if '.' in actor_first:
+        actor_first = actor_first.partition('.')[0]
+
     speech_date = time.strptime(date, '%Y-%m-%d')
 
-    # first run considering only the "primary" lastname
+    # first run considering only the "primary" lastname and primary and
     for row in member_info[1:]:
         if row[8]:  # started as MP
             row_start = time.strptime(row[8], '%Y-%m-%d')
             if row[9]:  # ended as MP
                 row_end = time.strptime(row[9], '%Y-%m-%d')
-                # and row[2] in actor_last or actor_last in row[2]
                 if (row[2] == actor_last.strip()):
                     if actor_first.strip():
-                        if (row[3] and row[3].startswith(actor_first)  # actor_first in row[3]
+                        if (row[3] and row[3].startswith(actor_first)
                                 and row_end >= speech_date >= row_start):
                             if not party.strip():
                                 return row[3], row[10].strip('.').upper()
@@ -176,10 +217,8 @@ def find_speaker(member_info, actor_first, last, party, date, not_found):
                             else:
                                 return row[3], party
             else:
-                # and row[2] in actor_last or actor_last in row[2]
                 if (row[2] == actor_last.strip()):
                     if actor_first.strip():
-                        # actor_first in row[3]
                         if (row[3] and row[3].startswith(actor_first) and speech_date >= row_start):
                             if not party.strip():
                                 return row[3], row[10].strip('.').upper()
@@ -199,7 +238,6 @@ def find_speaker(member_info, actor_first, last, party, date, not_found):
             row_start = time.strptime(row[8], '%Y-%m-%d')
             if row[9]:  # ended as MP
                 row_end = time.strptime(row[9], '%Y-%m-%d')
-                # and row[2] in actor_last or actor_last in row[2]
                 if (actor_last.strip() in alters):
                     if actor_first.strip():
                         if (row[3] and row[3].startswith(actor_first)  # actor_first in row[3]
@@ -215,10 +253,8 @@ def find_speaker(member_info, actor_first, last, party, date, not_found):
                             else:
                                 return row[3], party
             else:
-                # and row[2] in actor_last or actor_last in row[2]
                 if (actor_last.strip() in alters):
                     if actor_first.strip():
-                        # actor_first in row[3]
                         if (row[3] and row[3].startswith(actor_first) and speech_date >= row_start):
                             if not party.strip():
                                 return row[3], row[10].strip('.').upper()
@@ -236,6 +272,9 @@ def find_speaker(member_info, actor_first, last, party, date, not_found):
 
 def correct_party(party, lastname, date):
     current_date = time.strptime(date, '%Y-%m-%d')
+    if 'KOK.;NUORSUOMALAINEN PUOLUE' == party:
+        return 'NUORSUOMALAINEN PUOLUE'
+
     if 'KESK.;SMP' == party:
         if lastname.strip() == 'Vennamo':
             return 'SMP'
@@ -246,7 +285,7 @@ def correct_party(party, lastname, date):
     if 'RKP;SDP;SKDL' == party:
         return 'RKP'
 
-    if 'SKP;SKDL;VAS.' == party or 'SKDL;DEVA;VAS' == party or 'SKDL;VAS' == party:
+    if 'SKP;SKDL;VAS' in party or 'SKDL;DEVA;VAS' == party or 'SKDL;VAS' == party:
         if lastname.strip() == 'Tennilä':
             if time.strptime('1990-09-10', '%Y-%m-%d') >= current_date >= time.strptime('1986-06-05', '%Y-%m-%d'):
                 return'DEVA'
@@ -334,24 +373,27 @@ with open(filename, newline='') as csvfile:
         speech_id = form_speechID(session, index)
 
         actor_first, actor_last, party, speech_type = clean_actor(
-            actor.strip())
+            actor.strip(), date)
         actor_last = actor_last.strip('—')
         actor_first, party = find_speaker(
             member_info, actor_first, actor_last, party, date, not_found)
         party = correct_party(party, actor_last, date)
-        langs = ' '  # This a remnant of earlier structure but left here to keep compability
+        lang = ''
 
-        """ try:
-            parameters = {'text': content}
-            results = requests.get(
-                'http://demo.seco.tkk.fi/las/identify', params=parameters).json()
-            tags = []
-            tags = [k for d in results['details']
-                    ['languageDetectorResults'] for k in d.keys()]
-            langs = ':'.join(tags)
-        except:
-            langs = ''
-        print(speech_id) """
+        if content.startswith('(ruotsiksi)'):
+            lang = 'sv'
+        else:
+            try:
+                parameters = {'text': content}
+                results = requests.get(
+                    'http://demo.seco.tkk.fi/las/identify', params=parameters).json()
+                tags = []
+                tags = [k for d in results['details']
+                        ['languageDetectorResults'] for k in d.keys()]
+                lang = ':'.join(tags)
+            except:
+                lang = ''
+        # print(speech_id)
 
         if '(vas-<REMOVE>' in actor_last:
             actor_last = actor_last.partition('(')[0]
@@ -369,8 +411,12 @@ with open(filename, newline='') as csvfile:
         if (end and end[0].isalpha()):
             end = ''
 
+        content = re.sub('\n\n+', '\n', content)
+        content = re.sub('- [:;]+ ', '', content)
+        speech_type = speech_type.replace('-', '').title()
+
         cleaned_rows.append([speech_id, session, date, start.strip(), end, actor_first,
-                             actor_last, party, topic, content, speech_type, ' ', ' ', row[8], langs, original_actor, row[7]])
+                             actor_last, party, topic, content, speech_type, ' ', ' ', row[8], lang, original_actor, row[7]])
 
 
 # save to csv.file
