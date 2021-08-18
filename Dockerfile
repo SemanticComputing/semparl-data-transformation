@@ -15,7 +15,6 @@ RUN chmod a+rx *.sh
 RUN chmod a+rx *.py
 RUN chmod a+w .
 RUN chmod a+w ./results
-RUN ls -al original_html/
 
 ENTRYPOINT [ "./speech_transformation.sh" ]
 CMD [ "all" ] 

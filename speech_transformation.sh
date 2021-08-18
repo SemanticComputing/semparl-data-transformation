@@ -3,9 +3,6 @@ set -eo pipefail
 
 echo -e "**********************\nSTARTING THE PROCESS\n**********************"
 
-ls -al
-ls -al original_html/
-ls -al original_html/links
 
 if [ $1 = "all" ]; then
     echo -e "\nSTARTING ON PDF-BASED YEARS"
