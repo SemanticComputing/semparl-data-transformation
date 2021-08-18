@@ -10,6 +10,12 @@ Tools for gathering and formatting data for the Semantic Parliament dataservice 
 &nbsp;
  # Instructions
 
+ ## Short version: Use DOCKER
+Make folder 'results' at the root
+
+Please note that running the whole process might take a whole day or more.
+ ## Long version: How it's works under the hood
+
 The whole pipeline produces four files for each parliamentary session;
 - The Parla-CLARIN version is in its entarity in file ```Speeches_<year>.xml``` 
 - The RDF version is spread into three files: ```speeches_<year>.ttl, items_and_documents_<year>.ttl```  and ``` sessions_and_transcripts_<year>.ttl```. 

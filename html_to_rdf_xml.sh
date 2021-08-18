@@ -1,11 +1,11 @@
 #!/bin/bash
 
-for (( year=2000; year<=2014; year++ ))
+for (( year=2000; year<=2000; year++ ))
 do
     echo $year
-    python3 ../../data/2000-2014/discussions_$year.html
+    python3 html_to_csv.py ./original_html/discussions_$year.html
     echo '> Discussions ready!'
-    python3 main_pages_to_csv.py ../../data/2000-2014/main_pages_$year.html
+    python3 main_pages_to_csv.py ./original_html/main_pages_$year.html
     echo '> Main pages ready'
 
     python3 combine_speeches.py $year
@@ -21,3 +21,6 @@ do
     echo $year "Done! <<<<<"
 
 done
+
+mv *.xml results/
+mv *.ttl results/

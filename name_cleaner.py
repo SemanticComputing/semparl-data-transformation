@@ -4,6 +4,7 @@ import csv
 import time
 import collections
 import difflib
+import os
 
 
 def find_person(first, last, date, member_info):
@@ -90,14 +91,16 @@ def find_person(first, last, date, member_info):
 
 def main(file_year):
     csv.field_size_limit(sys.maxsize)
+    is_in_docker = os.environ.get('RUNNING_IN_DOCKER_CONTAINER', False)
 
     with open('speeches_{}.csv'.format(file_year), newline='') as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
         rows = list(reader)
 
-    with open('backups/speeches_{}_BAK2.csv'.format(file_year), 'w', newline='') as backup:
-        writer = csv.writer(backup, delimiter=',')
-        writer.writerows(rows)
+    if not is_in_docker:
+        with open('backups/speeches_{}_BAK2.csv'.format(file_year), 'w', newline='') as backup:
+            writer = csv.writer(backup, delimiter=',')
+            writer.writerows(rows)
 
     with open('python_csv_parliamentMembers.csv') as f:
         reader = csv.reader(f, delimiter='\t')
@@ -318,17 +321,18 @@ def main(file_year):
     freqs_end.sort()
 
     # name stats
-    with open('backups/name_log_{}.txt'.format(file_year), 'w',) as log_file:
-        log_file.write('Name regognition statistics\n\n')
-        log_file.write(num_of_problems_start)
-        log_file.write(num_of_problems_end)
-        log_file.write('Found issues and frequencies at start:\n')
-        for person, freq in freqs_start:
-            log_file.write('{}\t{}\n'.format(person, freq))
-        log_file.write('\n----------------------------------------\n\n')
-        log_file.write('Remaining issues and frequencies after edits:\n')
-        for person, freq in freqs_end:
-            log_file.write('{}\t{}\n'.format(person, freq))
+    if not is_in_docker:
+        with open('backups/name_log_{}.txt'.format(file_year), 'w',) as log_file:
+            log_file.write('Name regognition statistics\n\n')
+            log_file.write(num_of_problems_start)
+            log_file.write(num_of_problems_end)
+            log_file.write('Found issues and frequencies at start:\n')
+            for person, freq in freqs_start:
+                log_file.write('{}\t{}\n'.format(person, freq))
+            log_file.write('\n----------------------------------------\n\n')
+            log_file.write('Remaining issues and frequencies after edits:\n')
+            for person, freq in freqs_end:
+                log_file.write('{}\t{}\n'.format(person, freq))
 
     # save cleaned version
     with open('speeches_{}.csv'.format(file_year), 'w', newline='') as save_to:

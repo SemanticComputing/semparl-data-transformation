@@ -9,7 +9,7 @@
 
 
 # Chooce correct time range
-for (( year=1908; year<=1908; year++ )) 
+for (( year=1907; year<=1907; year++ )) 
 do
     if [[ $year -eq 1915 || $year -eq 1916 ]]; then
         echo ">> No data for year $year <<"
@@ -67,7 +67,7 @@ do
 
 # Moving files   
     # echo "> Moving raw csv into directory 'RAW'..."
-    # mv $path/speeches_*_RAW.csv ./RAW/
+    # mv $path/speeches_*_RAW.csv ../data/1908-1999/19${decade}0s/RAW
 
     echo "> Removing redundant raw csvs"
     rm $path/*_RAW.csv
@@ -141,7 +141,7 @@ do
 
     # Moving files
         # echo "> Moving raw csv into directory 'RAW'..."
-        # mv $path/speeches_*_RAW.csv ./RAW
+        # mv $path/speeches_*_RAW.csv ../data/1908-1999/19${decade}0s/RAW
 
         echo "> Removing redundant raw csvs"
         rm $path/*_RAW.csv
@@ -193,7 +193,7 @@ do
 
     # Moving files
         # echo "> Moving raw csv into directory 'RAW'..."
-        # mv $path/speeches_*_RAW.csv ./RAW
+        # mv $path/speeches_*_RAW.csv ../data/1908-1999/19${decade}0s/RAW
 
         echo "> Removing redundant raw csvs"
         rm $path/*_RAW.csv
@@ -218,7 +218,8 @@ do
     echo $year "Done! <<<<<"
 done
 
-
+mv *.xml results/
+mv *.ttl results/
 
 
 # #     # if [ ! -d "../data/1990-1999/$year/RAW" ] 

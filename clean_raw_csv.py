@@ -345,7 +345,8 @@ with open(filename, newline='') as csvfile:
     index = 0
     current_session = ''
     previous_sessions = {}
-    for row in reader:
+    testrows = list(reader)
+    for row in testrows[:50]:  # reader:
         if not row[6].strip():
             continue
         index += 1

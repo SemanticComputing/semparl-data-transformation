@@ -1,10 +1,10 @@
 #!/bin/bash
 
-for (( year=2015; year<=2021; year++ ))
+for (( year=2015; year<=2015; year++ ))
 do
     echo $year
 
-    python3 xml_to_csv.py $year
+    python3 xml_to_CSV.py $year
     echo '> Final CSV ready!'
 
 # Final transformations
@@ -17,3 +17,6 @@ do
     echo $year "Done! <<<<<"
 
 done
+
+mv *.xml results/
+mv *.ttl results

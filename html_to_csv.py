@@ -3,6 +3,7 @@ import lxml
 import sys
 import re
 import csv
+import os
 from pprint import pprint
 
 # Gather content-html elements from discussion links.
@@ -116,10 +117,15 @@ def parse_pm_speech(speech_section):
 
 
 def main(file):
+    is_in_docker = os.environ.get('RUNNING_IN_DOCKER_CONTAINER', False)
     parliament_year = file[-9:-5]
 
-    link_file = '../../data/2000-2014/links/links_{:s}.txt'.format(
-        parliament_year)
+    if is_in_docker:
+        link_file = 'original_html/links/links_{:s}.txt'.format(
+            parliament_year)
+    else:
+        link_file = '../../data/2000-2014/links/links_{:s}.txt'.format(
+            parliament_year)
     with open(link_file, 'r') as links_f:
         contents = links_f.read()
         links = contents.split('\n')
@@ -134,7 +140,7 @@ def main(file):
         writer.writerow(['session', 'date', 'session_start', 'session_end', 'actorFirstname',
                          'actorLastname', 'party', 'topic', 'content', 'speechType', 'status', 'version', 'link'])
         i = 1
-        for div in divs:
+        for div in divs[:50]:
             topic = ' '
             date, session_start = form_date(div.h2.string)
             session = session_number(re.sub('\n *', ' ', div.h5.string))

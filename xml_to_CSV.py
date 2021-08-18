@@ -114,7 +114,7 @@ def main(year):
     }
     all_speeches = []
     #print('vajaa lista')
-    for i in range(1, session_count[year]+1):
+    for i in range(1, 2):  # session_count[year]+1):
         # download minutes for one session
         id_doc = 'PTK {:d}/{} vp'.format(i, year)
         parameters = {'perPage': 10, 'page': 0,
