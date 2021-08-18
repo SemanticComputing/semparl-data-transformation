@@ -8,15 +8,19 @@ COPY . /app/
 
 RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
-RUN chmod +x speech_transformation.sh
-RUN chmod +x txt_to_rdf_xml.sh
-RUN chmod +x html_to_rdf_xml.sh
-RUN chmod +x xml_to_rdf_xml.sh
+RUN chmod a+r *
+RUN chmod a+rx *.sh
+RUN chmod a+rx *.py
+RUN chmod a+w .
+RUN chmod a+w ./results
 
-CMD ./speech_transformation.sh
+ENTRYPOINT [ "./speech_transformation.sh" ]
+CMD [ "all" ] 
+# update
 
 
-# docker run -v "$(pwd)/results:/app/results" pipeline 
+
+# docker run --user $(id -u) -v "$(pwd)/results:/app/results" pipeline 
 
 
 #Vajaa lista:
