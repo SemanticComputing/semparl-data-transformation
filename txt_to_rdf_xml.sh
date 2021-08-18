@@ -3,9 +3,6 @@
 #######################################################
 # Transform plenary debates 1907-1999 to XML and RDF  #
 #######################################################
-# Expects following directories/paths:
-# - data dirs, including RAW
-# - ./backups 
 
 
 # Chooce correct time range
