@@ -1,9 +1,9 @@
 #!/bin/bash
 
 if [ $1 = "all" ]; then
-    for (( year=2015; year<=2015; year++ ))
+    for (( year=2015; year<=2021; year++ ))
     do
-        echo $year
+        echo ">> Processing year" $year
 
         python3 xml_to_CSV.py $year
         echo '> Final CSV ready!'
@@ -20,7 +20,7 @@ if [ $1 = "all" ]; then
     done
 else
     year=2021
-    echo $year
+    echo ">> Processing year" $year
 
     python3 xml_to_CSV.py $year
     echo '> Final CSV ready!'

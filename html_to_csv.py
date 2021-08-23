@@ -140,7 +140,7 @@ def main(file):
         writer.writerow(['session', 'date', 'session_start', 'session_end', 'actorFirstname',
                          'actorLastname', 'party', 'topic', 'content', 'speechType', 'status', 'version', 'link'])
         i = 1
-        for div in divs[:50]:
+        for div in divs:
             topic = ' '
             date, session_start = form_date(div.h2.string)
             session = session_number(re.sub('\n *', ' ', div.h5.string))

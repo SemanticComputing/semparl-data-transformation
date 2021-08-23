@@ -6,7 +6,7 @@
 
 
 # Chooce correct time range
-for (( year=1907; year<=1907; year++ )) 
+for (( year=1907; year<=1999; year++ )) 
 do
     if [[ $year -eq 1915 || $year -eq 1916 ]]; then
         echo ">> No data for year $year <<"
@@ -80,12 +80,15 @@ do
     python3 ./name_cleaner.py $year
     echo "End of cleanup logs *"
 
-# Final transformations
-    echo "> Creating XML..."
-    python3 ./csv_to_xml.py $year
+# Final transformations (except for year 1999 which is half html-based and finalized in html script)
+    if [[ ! $year -eq 1999 ]]; then
+        echo "> Creating XML..."
+        python3 ./csv_to_xml.py $year
 
-    echo "> Creating RDF..."
-    python3 ./create_rdf.py $year
+        echo "> Creating RDF..."
+        python3 ./create_rdf.py $year
+    fi
+    
 
 
 ###################################################

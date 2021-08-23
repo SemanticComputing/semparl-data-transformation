@@ -123,7 +123,7 @@ def main(file):
         all_speeches = []
         skt_times = []
         document_info = []
-        for div in divs[:50]:
+        for div in divs:
             version, status = ' ', ' '
             date = form_date(div.h2.string)
             session = session_number(re.sub('\n *', ' ', div.h5.string))

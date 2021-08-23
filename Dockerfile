@@ -18,17 +18,10 @@ RUN chmod a+w ./results
 
 ENTRYPOINT [ "./speech_transformation.sh" ]
 CMD [ "all" ] 
-# update
 
 
-
+# Run with this to create all:
 # docker run --user $(id -u) -v "$(pwd)/results:/app/results" pipeline 
 
-
-#Vajaa lista:
-#clean_raw
-#xml-kerääjä
-#main_pages
-#html_to_csv
-#1907 kansio
-# skriptit
+# Run with this to update newest year:
+# docker run --user $(id -u) -v "$(pwd)/results:/app/results" pipeline update
