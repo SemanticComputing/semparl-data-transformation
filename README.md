@@ -118,7 +118,7 @@ The XML source data is quick to retrieve so it is gathered in the transformation
 Both XML and RDF version are created from the CSV.
 
 &nbsp;
- # Manually update the newest year with new plenary sessions
+ ## Manually update the newest year with new plenary sessions
 
  Update the amount of held sessions for the current year in dict ```session_count``` in ```xml_to_CSV.py```
 
