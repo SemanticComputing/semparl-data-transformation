@@ -8,28 +8,43 @@ Tools for gathering and formatting data for the Semantic Parliament dataservice 
 4. Create ttl-files of data in RDF-format
 
 &nbsp;
- # Instructions
-
- ## Short version: Use DOCKER
-Make folder 'results' at the root
-
-Please note that running the whole process might take a whole day or more.
- ## Long version: How it's works under the hood
-
 The whole pipeline produces four files for each parliamentary session;
 - The Parla-CLARIN version is in its entarity in file ```Speeches_<year>.xml``` 
 - The RDF version is spread into three files: ```speeches_<year>.ttl, items_and_documents_<year>.ttl```  and ``` sessions_and_transcripts_<year>.ttl```. 
+ # Instructions
 
-The process requires csv-files:
- - ```python_csv_parliamentMembers.csv``` containing parliament member info, e.g. personal URIs, parties, party URIs and so on, for linking.
- - ```parliamentary_sessions.csv``` containing parliamentary seasons info for linking
- - The files can be found [here](https://version.aalto.fi/gitlab/seco/semparl-speeches-source-backups) (Access restricted) 
+ ## Short version: Use DOCKER
+- Install [Docker](https://docs.docker.com/engine/install/).
+
+- If you only wish to update the newest year, you now got all you need!
+
+    If you wish to run the whole transformation process, you need the source materials from [here](https://version.aalto.fi/gitlab/seco/semparl-speeches-source-backups) (access restricted).
+    Copy the folders ```fixed_title_txt-files``` and ```original_html``` to this root folder. Don't
+    change the names or structure of these folders.
 
 
+- First build the Docker image:
+
+    ```sudo docker build . -t pipeline``` (if you have already added yourself to docker group, you don't need 'sudo' now or later)
+
+- Then you can either run the whole transformation process:
+
+    ```sudo docker run --user $(id -u) -v "$(pwd)/results:/app/results" pipeline``` 
+
+    Or update the newest year:
+
+    ```sudo docker run --user $(id -u) -v "$(pwd)/results:/app/results" pipeline update``` 
+
+- After the process is done, the result files will be available in newly made folder ```results```.
+
+Please note that running the whole process might take a whole day or more.
+ 
  &nbsp;
+ ## Long version: How it works under the hood
 
 
- ## PDF-based data 
+
+ ### PDF-based data 
  ___
  - until Valtiopäivät 1999
  - source: txt-files OCR'ed from pdf-files
@@ -41,32 +56,27 @@ As the first line of a Pöytäkirja contained crucial metadata. I.e.:
 
 ```111. Maanantaina 16 päivänä joulukuuta 1991```
 
- All the txt-files were run through ```ocr_data/print_session-titles.py```. The program printed all of these first lines that were intact. The missing first lines could be easily inferred from the print out and fixed in the txt-file (usually the line was split). This process for  made the following tranformations remarkably easier and more reliable. Files ```PTK_1908_2.txt``` adn ```PTK_1908_3.txt``` both included plenary sessions 24-28, the duplicates were manuaylly removed from ```PTK_1908_2.txt```.
-
+ All the txt-files were run through ```other_tools/print_session-titles.py```. The program printed all of these first lines that were intact. The missing first lines could be easily inferred from the print out and fixed in the txt-file (usually the line was split). This process made the following transformations remarkably easier and more reliable. Files ```PTK_1908_2.txt``` and ```PTK_1908_3.txt``` both included plenary sessions 24-28. The duplicates were manually removed from ```PTK_1908_2.txt```.
+You can find the fixed txt-files [here](https://version.aalto.fi/gitlab/seco/semparl-speeches-source-backups).
 &nbsp;
 
-**Step 1: Form a CSV from fixed ocr'ed text files and transform it to RDF and XML**
+**Step 1: Form a CSV from fixed ocr'ed text files**
 
-Create the following folders
+The text-files are gone over and with the use of regular expressions, the speeches and relevant details are first gathered in a raw, unrefined form into a CSV-format, one CSV-file per text file, one speech per row. Then these raw files are concatenated to form one CSV for one parliamentary session. This combination file
+the goes through several clean-ups. Clustered data is split, additional data from other sources is added
+and attemps to fix several problems, such as distorted speaker names and split speeches.
 
-???????
+**Step 2: Create XML and RDF from CSV**
 
+Both XML and RDF version are created from the cleaned up CSV.
 
- or edit the paths in ```ocr_data/txt_to_rdf.sh``` and in the scripts run by it to suit your needs.
+*Special case: year 1999:*
 
-- For years 1907-1998:
+Parliamentary session 1999's plenary sessions are available in HTML from 86/1999 onwards. For best results first half of 1999 is created from ocr'ed data and  the rest from html. These halfs are combined before creating final XML and RFD files.
 
-    Run ```./ocr_data/txt_to_rdf.sh```
-
-- For year 1999:
-
-    Parliamentary session 1999's plenary sessions are available in HTML from 86/1999 onwards. For best results first half of 1999 is created from ocr'ed data and  the rest from html. These halfs are combined before creating final XML and RFD files.
-
-    Run ```TBA```
-....
 
 &nbsp;
-## HTML-based data
+### HTML-based data
 ____ 
 - Valtiopäivät 2000-2014
 - source: html-data
@@ -74,41 +84,44 @@ ____
 **Step 0: Produce the HTML data**
 
 Data is spread on individual plenary session's main page and separate discussion pages, one topic per discussion page.
-Scrape the HTML data from Eduskunta.fi-web pages or use the already gathered and pruned data from [here](https://version.aalto.fi/gitlab/seco/semparl-speeches-source-backups) (Access restricted) This data was downloaded in May/June 2020 and pruned of unneeded source code (footers, nav bars., etc.). The scripts full functionality can be guaranteed only for that version of the data. In either case it is recommended to download the data to ensure ease of reuse as the downloading process from eduskunta.fi was very slow.
+The HTML data can be scraped from eduskunta.fi web pages or the already gathered and pruned data from [here](https://version.aalto.fi/gitlab/seco/semparl-speeches-source-backups) (access restricted) can be used. This data was downloaded in May/June 2020 and pruned of unneeded source code (footers, nav bars., etc.). The scripts full functionality can be guaranteed only for that version of the data. In either case it is recommended to download the readied data to ensure ease of reuse as the downloading process from eduskunta.fi was very slow.
 
 To scrape the data:
 
-Run ```html_data/ptk_links.py``` to gather main page html-content of one Valtiopäivät/Parliamentory year to one file and possible discussion page links to another. 
+Run ```other_tools/ptk_links.py``` to gather main page html-content of one Valtiopäivät/Parliamentory year to one file and possible discussion page links to another. 
 
-Run ```html_data/download_content.py``` to gather the html-content from the discussion pages using the link file.
+Run ```other_tools/download_content.py``` to gather the html-content from the discussion pages using the link file.
 
-**Step 1: Form a CSV from from HTML files and transform it to RDF and XML**
+**Step 1: Form a CSV from from HTML files**
 
-Create 
+As the  main page and the discussions of each plenary session are in different html-files, they are first gathered into separate main page and discussion files, one of each per parliamentary session, one speech per row. At the same time a file 'related details' is created to connect separated bits of details
+such as time details. These files are then combined to form a singular CSV-file containing all the speeches.
 
-??????
+**Step 2: Create XML and RDF from CSV**
 
- or edit paths in ```html_to_all_csv.sh``` and in the scripts run by it to suit your needs.
-
-Run ```./html_data/html_to_rdf_xml.sh```
+Both XML and RDF version are created from the combined CSV.
 
 
  &nbsp;
 
-## XML-based data
+### XML-based data
 ___
-- Valtiopäivät 2015-2021
+- Valtiopäivät 2015->
 - source: xml-data
 
-Run ```./xml_data/xml_to_rdf_xml.sh```
+**Step 1: Form a CSV from from XML**
+
+The XML source data is quick to retrieve so it is gathered in the transformation process by the way of requests to Avoin eduskunta API. The API returns each plenary session in separate JSON-wrapped XML. The speeches are again gathered to one CSV, one parliamentary session per file, one speech per row.
+
+**Step 2: Create XML and RDF from CSV**
+
+Both XML and RDF version are created from the CSV.
 
 &nbsp;
- # Update with new plenary sessions
+ # Manually update the newest year with new plenary sessions
 
- Edit the loop range in ```./xml_data/xml_to_rdf_xml.sh``` to suit your needs to avoid redoing old years.
+ Update the amount of held sessions for the current year in dict ```session_count``` in ```xml_to_CSV.py```
 
- Edit the amount of sessions to download for your desired year in ```./xml_data/xml_to_CSV.py```
-
- Run ```./xml_data/xml_to_rdf_xml.sh```
+ Run ```./xml_to_rdf_xml.sh update```
 
 
