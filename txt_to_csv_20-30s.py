@@ -66,7 +66,7 @@ def topic_starter(row, prev_row, second_prev_row):
     # 7) N:o 61 Ed. Pulliainen: Asioiden käsittely
     topic = re.compile('^[0-9]+\) [A-ZÅÄÖ].*')
     interpellation = re.compile(
-        '^[EBF]d. (af|von|v\.)? ?[A-ZÅÄÖ].+n (y\.? ?m\. )?välikysymys')  # välikysymys
+        '^[EBF]d\. (af|von|v\.)? ?[A-ZÅÄÖ].+n (y\.? ?m\. )?välikysymys')  # välikysymys
     iniative = re.compile('^Ehdotu(kset|s) laiksi ')
     budget = re.compile('^Ehdotus valtion tulo- ja menoarvioksi vuodelle')
     budget2 = re.compile('^Lisäyksiä ja muutoksia vuoden 19\d{2} tulo- ja')
@@ -155,8 +155,9 @@ def topic_details(row):
 def speech_starters(row, row2, row3):
     speech_start = re.compile("^[EFB]d[\.,] ?(af|von|v\.)? ?[A-ZÅÄÖ].*[:;]")
     speech_start2 = re.compile(
-        "^[A-ZÅÄÖ].*iniste[rt]i (af|von)? ?[A-ZÅÄÖ].*[:;]")
-    long_title = re.compile('^[A-ZÅÄÖ].*iniste[rt]i (af|von)? ?[A-ZÅÄÖ].*-$')
+        "^[A-ZÅÄÖ][^(:]*iniste[rt]i (af|von)? ?[A-ZÅÄÖ].*[:;]")
+    long_title = re.compile(
+        '^[A-ZÅÄÖ][^(:]*iniste[rt]i (af|von)? ?[A-ZÅÄÖ].*-$')
     long_title2 = re.compile('^[A-ZÅÄÖa-zåäö]+[;:]')
     two_lines1 = re.compile("^[EFB]d[\.,] (af|von)? ?[A-ZÅÄÖ].*\(va")
     two_lines2 = re.compile("[a-z]*ro\) ?:")
@@ -808,7 +809,7 @@ def main(filename):
             writer.writerow(
                 [all_speeches[i][0], all_speeches[i][1], session_times[all_speeches[i][0]]['start'],
                  end, all_speeches[i][2], all_speeches[i][3], all_speeches[i][4], all_speeches[i][5], all_speeches[i][6]])
-    print(len(all_speeches))
+    # print(len(all_speeches))
 
 
 if __name__ == "__main__":

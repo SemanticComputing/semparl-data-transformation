@@ -64,12 +64,9 @@ def speaker_info(s):
     sp = re.sub(' +\(', '\(', speak)
     speaker = re.sub(' vastaus', '(vastaus', sp)
     parts = speaker.split()
-    if 'inisteri' in speaker or 'n oikeus' in speaker:
+    if 'inisteri' in speaker or 'n oikeus' in speaker or 'n apulaisoikeus' in speaker:
         return parts[-2], parts[-1], ' '.join(parts[:-2])
     else:
-
-        if (' vastaus') in speaker:
-            print(speaker)
         return ' '.join(parts[:-2]), parts[-2], re.sub(':', '', parts[-1][1:].upper())
 
 
@@ -107,7 +104,7 @@ def parse_pm_speech(speech_section):
                 chairman_comment = []
                 for comment in chairman_comments:
                     chairman_comment.append(comment.string)
-                speech.append('<<{:s}|{:s}>>'.format(
+                speech.append('<<{:s}|{:s}>>'.format(  # append('({:s}:{:s})'.format(
                     chairman, ' '.join(chairman_comment)))
             if child.has_attr('xmlns:edk'):
                 speech.append(child.string)
@@ -126,6 +123,7 @@ def main(file):
     else:
         link_file = '../../data/2000-2014/links/links_{:s}.txt'.format(
             parliament_year)
+
     with open(link_file, 'r') as links_f:
         contents = links_f.read()
         links = contents.split('\n')
@@ -157,13 +155,41 @@ def main(file):
                 firstname, lastname, tmp_party = speaker_info(speaker)
                 party, speech_type = check_type(tmp_party)
                 if speech.find('div', 'PMVALI'):
+                    # A chairman comment enbedded into the speech element
                     content = parse_pm_speech(speech)
                 else:
                     content = parse_speech(
                         speech.find_all('p', attrs={'xmlns:edk': 'http://eduskunta'}))
 
-                writer.writerow([session, date, session_start, '', firstname,
-                                 lastname, party.strip('\\'), topic, content, speech_type, status, version, link])
+                if content.endswith('>>'):
+                    # A chairman comment trailing the speech. Add it as a separate speech
+                    # (as it is shown as such in rendered HTML view)
+                    parts = content.rsplit('<<', 1)
+                    content = parts[0].strip()
+                    chairman_parts = parts[-1].partition(
+                        '|')[0].strip(':').split(' ')
+                    chairman_parts = list(filter(None, chairman_parts))
+                    if len(chairman_parts) < 3:
+                        cm_firstname = ''
+                        cm_lastname = ''
+                        cm_title = ' '.join(chairman_parts)
+                    else:
+                        cm_firstname = chairman_parts[-2]
+                        cm_lastname = chairman_parts[-1]
+                        cm_title = ' '.join(chairman_parts[:-2])
+                    cm_content = parts[-1].partition('|')[2].strip('>>')
+
+                    # Remove unneeded chairman markings
+                    content = re.sub(r'<<(.+?)\|(.+?)>>', r'(\1 \2)', content)
+
+                    writer.writerow([session, date, session_start, '', firstname,
+                                     lastname, party.strip('\\'), topic, content, speech_type, status, version, link])
+                    writer.writerow([session, date, session_start, '', cm_firstname,
+                                     cm_lastname, cm_title, topic, cm_content, ' ', status, version, link])
+                else:
+                    content = re.sub(r'<<(.+?)\|(.+?)>>', r'(\1 \2)', content)
+                    writer.writerow([session, date, session_start, '', firstname,
+                                     lastname, party.strip('\\'), topic, content, speech_type, status, version, link])
 
 
 if __name__ == "__main__":

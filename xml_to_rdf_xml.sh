@@ -8,6 +8,9 @@ if [ $1 = "all" ]; then
         python3 xml_to_CSV.py $year
         echo '> Final CSV ready!'
 
+        echo '> Enriching speaker info...'
+        python3 enrich_member_info.py $year
+
     # Final transformations
         echo "> Creating XML..."
         python3 csv_to_xml.py $year
@@ -24,6 +27,9 @@ else
 
     python3 xml_to_CSV.py $year
     echo '> Final CSV ready!'
+
+    echo '> Enriching speaker info...'
+    python3 enrich_member_info.py $year
 
 # Final transformations
     echo "> Creating XML..."

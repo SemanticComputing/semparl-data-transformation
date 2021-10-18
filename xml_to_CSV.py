@@ -110,7 +110,7 @@ def main(year):
         '2018': 181,
         '2019': 87,
         '2020': 170,
-        '2021': 75  # Checked 14.6.2021
+        '2021': 118  # Checked 18.10.2021
     }
     all_speeches = []
     #print('vajaa lista')
@@ -200,13 +200,13 @@ def main(year):
                         try:
                             all_speeches.append([speech_id, session, date, session_start, session_end,
                                                  speaker[-2], speaker[-1], ' '.join(
-                                                     speaker[:-2]), topic, content,
+                                                     speaker[:-2]), '', topic, content,
                                                  ' ', doc_status, doc_version, link, langs, ' '.join(
                                                      speaker)])
                         except:
                             all_speeches.append([speech_id, session, date, session_start, session_end,
                                                  '', '', ' '.join(
-                                                     speaker), topic, content,
+                                                     speaker), '', topic, content,
                                                  ' ', doc_status, doc_version, link, langs, ' '.join(
                                                      speaker)])
         # MP speech
@@ -215,7 +215,9 @@ def main(year):
                         speech_type = ' '
                         if speech.find('vsk1:TarkenneTeksti'):
                             speech_type = re.sub('\(|\)', '', speech.find(
-                                'vsk1:TarkenneTeksti').string).capitalize()
+                                'vsk1:TarkenneTeksti').string)
+                            speech_type = speech_type.replace(
+                                '-', '').capitalize()
                         try:
                             speaker_id = speech.find(
                                 'Henkilo').attrs['met1:muuTunnus'].strip()
@@ -225,18 +227,19 @@ def main(year):
                         last = speech.find(
                             'org1:SukuNimi').string.strip()
                         party = ''
+                        role = 'Kansanedustaja'
                         if (speech.find(
                                 'org1:LisatietoTeksti')):
                             party = speech.find(
                                 'org1:LisatietoTeksti').string
                             if party:
                                 party = party.upper()
-                        if (speech.find('org1:AsemaTeksti') and not party):
-                            party = speech.find(
+                        if (speech.find('org1:AsemaTeksti')):
+                            role = speech.find(
                                 'org1:AsemaTeksti').string.strip()
 
                         if 'uhemies' in first:  # Fixing mistakes in source data
-                            party = re.search('.*uhemies', first).group(0)
+                            role = re.search('.*uhemies', first).group(0)
                             first = re.sub('.*uhemies ', '', first)
 
                         if speech.find('vsk:PuheenvuoroOsa'):
@@ -272,13 +275,13 @@ def main(year):
                             # append speech
                             # append chairman comment
                             all_speeches.append([speech_id, session, date, session_start, session_end,
-                                                 first, last, party, topic, content, speech_type,
+                                                 first, last, role, party, topic, content, speech_type,
                                                  doc_status, doc_version, link, langs, first + ' ' + last, speaker_id,
                                                  details['startTime'], details['endTime'], details['status'], details['textVersion']])
                             counter += 1
                             speech_id = '{}_{}_{}'.format(year, i, counter)
                             all_speeches.append([speech_id, session, date, session_start, session_end,
-                                                 cm_firstname, cm_lastname, cm_title, topic, cm_content, ' ',
+                                                 cm_firstname, cm_lastname, cm_title, '', topic, cm_content, ' ',
                                                  doc_status, doc_version, link, cm_lang, ' '.join([
                                                      cm_title, cm_firstname, cm_lastname]), ' ',
                                                  '', '', details['status'], details['textVersion']])
@@ -288,12 +291,12 @@ def main(year):
 
                             if details:
                                 all_speeches.append([speech_id, session, date, session_start, session_end,
-                                                     first, last, party, topic, content, speech_type,
+                                                     first, last, role, party, topic, content, speech_type,
                                                      doc_status, doc_version, link, langs, first + ' ' + last, speaker_id,
                                                      details['startTime'], details['endTime'], details['status'], details['textVersion']])
                             else:
                                 all_speeches.append([speech_id, session, date, session_start, session_end,
-                                                     first, last, party, topic, content, speech_type,
+                                                     first, last, role, party, topic, content, speech_type,
                                                      doc_status, doc_version, link, langs, first + ' ' + last, speaker_id,
                                                      '', '', '', ''])
                     counter += 1
@@ -301,9 +304,12 @@ def main(year):
 
     with open('speeches_{}.csv'.format(year), 'w', newline='') as file:
         writer = csv.writer(file, delimiter=',')
+        writer.writerow(['speech_id', 'session', 'date', 'start_time', 'end_time', 'given', 'family', 'role', 'party', 'topic',
+                         'content', 'speech_type', 'status', 'version', 'link', 'lang', 'name_in_source', 'speaker_id', 'speech_start', 'speech_end', 'speech_status', 'speech_version'])
+
         writer.writerows(all_speeches)
 
-    #print('KIELI PUUTTUU x2')
+    #print('KIELI PUUTTUU x3')
 
 
 if __name__ == "__main__":

@@ -16,6 +16,10 @@ The whole pipeline produces four files for each parliamentary session;
  ## Short version: Use DOCKER
 - Install [Docker](https://docs.docker.com/engine/install/).
 
+- Speaker information enrichment step uses SPARQL queries. For that you need to create file ```authorization.py``` to the root folder. File should contain row
+
+    ```AUTHORIZATION_HEADER: = {'Authorization':"<password here>"}```
+
 - If you only wish to update the newest year, you now got all you need!
 
     If you wish to run the whole transformation process, you need the source materials from [here](https://version.aalto.fi/gitlab/seco/semparl-speeches-source-backups) (access restricted).
@@ -95,7 +99,7 @@ Run ```other_tools/download_content.py``` to gather the html-content from the di
 **Step 1: Form a CSV from from HTML files**
 
 As the  main page and the discussions of each plenary session are in different html-files, they are first gathered into separate main page and discussion files, one of each per parliamentary session, one speech per row. At the same time a file 'related details' is created to connect separated bits of details
-such as time details. These files are then combined to form a singular CSV-file containing all the speeches.
+such as time details. These files are then combined to form a singular CSV-file containing all the speeches. peaker information is further enriched after this step.
 
 **Step 2: Create XML and RDF from CSV**
 
@@ -111,7 +115,7 @@ ___
 
 **Step 1: Form a CSV from from XML**
 
-The XML source data is quick to retrieve so it is gathered in the transformation process by the way of requests to Avoin eduskunta API. The API returns each plenary session in separate JSON-wrapped XML. The speeches are again gathered to one CSV, one parliamentary session per file, one speech per row.
+The XML source data is quick to retrieve so it is gathered in the transformation process by the way of requests to Avoin eduskunta API. The API returns each plenary session in separate JSON-wrapped XML. The speeches are again gathered to one CSV, one parliamentary session per file, one speech per row. Speaker information is further enriched after this step.
 
 **Step 2: Create XML and RDF from CSV**
 
@@ -124,4 +128,13 @@ Both XML and RDF version are created from the CSV.
 
  Run ```./xml_to_rdf_xml.sh update```
 
+ &nbsp;
 
+
+# Government proposals
+
+Government proposals can be gathered and transformed to RDF with
+   
+    ```python transform_gov_proposals.py```
+
+This process can be run by using a presearched list of government ids and retrieving the documents based on that or by researching the ids and then doing the the rest of the transformation process. Choose the option by commenting out the appropriate rows (see code).

@@ -9,7 +9,7 @@ from pprint import pprint
 ##################################
 # Script for 1907-1909_I         #
 # Second Valtiopäivät:           #
-# 1908_2-4                      #
+# 1908_2-4                       #
 ##################################
 
 
@@ -159,10 +159,10 @@ def topic_details(row, topic):
 def speech_starters(row, row2):
     speech_start = re.compile("^[EF]d[\.,] ?(af|von|v\.)? ?[A-ZÅÄÖ].*?[:;] ")
     speech_start2 = re.compile(
-        "^[A-ZÅÄÖ].*iniste[rt]i (af|von|v\.)? ?[A-ZÅÄÖ].*?[:;] ")
+        "^[A-ZÅÄÖ][^(:]*iniste[rt]i (af|von|v\.)? ?[A-ZÅÄÖ].*?[:;] ")
     speech_start3 = re.compile('Senaattori (af|von)? ?[A-ZÅÄÖ].*?[;:] ')
     long_title = re.compile(
-        '^[A-ZÅÄÖ].*iniste[rt]i (af|von|v\.)? ?[A-ZÅÄÖ].*-$')
+        '^[A-ZÅÄÖ][^(:]*iniste[rt]i (af|von|v\.)? ?[A-ZÅÄÖ].*-$')
     long_title2 = re.compile('^[A-ZÅÄÖa-zåäö]+[;:] ')
 
     chairman = re.compile(
@@ -806,7 +806,7 @@ def main(filename):
             writer.writerow(
                 [all_speeches[i][0], all_speeches[i][1], session_times[all_speeches[i][0]]['start'].strip('.'),
                  end.strip('.'), all_speeches[i][2], all_speeches[i][3], all_speeches[i][4], all_speeches[i][5], all_speeches[i][6]])
-    print(len(all_speeches))
+    # print(len(all_speeches))
 
 
 if __name__ == "__main__":

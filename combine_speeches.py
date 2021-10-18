@@ -127,7 +127,7 @@ def main(year):
         if len(row[3]) < 5:
             row[3] = fix_times(row[3])
         # create speech ids
-        speech_order_num = '{:s}.{:d}.{:d}'.format(
+        speech_order_num = '{:s}_{:d}_{:d}'.format(
             year, session_number(row[0]), i)
         row.insert(0, speech_order_num)
         i += 1
@@ -143,17 +143,28 @@ def main(year):
             row.insert(14, ':'.join(tags))
         except:
             row.insert(14, '')
+
         if 'uhemies' in row[7]:
-            row.insert(15, row[7])
+            row.insert(15, row[7] + ' ' + row[5] + ' ' + row[6])
         else:
             row.insert(15, row[5] + ' ' + row[6])
         if row[1] == '89/2009':
             row[2] = '2009-10-08'
 
+        if row[7].isupper():
+            # party known, add role
+            row.insert(7, 'Kansanedustaja')
+        else:
+            # role known, add placeholder for party
+            row.insert(7, row[7])
+            row[8] = ''
+
         # print(row[0])
 
     with open('speeches_{:s}.csv'.format(year), 'w') as save_to:
         writer = csv.writer(save_to, delimiter=',')
+        writer.writerow(['speech_id', 'session', 'date', 'start_time', 'end_time', 'given', 'family', 'role', 'party', 'topic',
+                         'content', 'speech_type', 'status', 'version', 'link', 'lang', 'name_in_source', 'discussion_page_link'])
         writer.writerows(all_speeches)
     # with open('speeches_{:s}.tsv'.format(year), 'w') as save_to:
     #    writer = csv.writer(save_to, delimiter='\t')

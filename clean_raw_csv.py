@@ -4,7 +4,13 @@ import sys
 import requests
 import json
 import time
+import pandas as pd
 from pprint import pprint
+from speakerAnalyzer import *
+
+member_info = []
+not_found = []
+sp = SpeakerAnalyzer()
 
 
 def sort_sessions(row):
@@ -65,7 +71,7 @@ def clean_actor(actor, date):
     actor = actor.replace('d,', 'd.')
     actor = actor.replace('-<REMOVE> ', '')
 
-    if 'Pääministeri A h o' in actor:
+    if re.compile('Pääministeri A ?h ?[o0]?').match(actor):
         actor = "Pääministeri Aho"
     if 'Oikeusministeri P o' in actor:
         actor = 'Oikeusministeri Pokka'
@@ -151,7 +157,7 @@ def clean_actor(actor, date):
         first_name = 'E'
     if 'gvist' in actor_last:
         actor_last = actor_last.replace('gvist', 'qvist')
-    if actor_last.strip() in ['Flo', 'E10', 'E1o', 'F10']:
+    if actor_last.strip() in ['FEIo', 'E10o', 'E|o', 'F1o', 'E1lo', 'EI1o']:
         actor_last = 'Elo'
     if actor_last == 'S-LAnttila':
         actor_last = 'Anttila'
@@ -168,6 +174,9 @@ def clean_actor(actor, date):
     role = re.sub("^\-?[EF]d[\.,]?$", '', role)
     role = re.sub("  +", ' ', role)
 
+    if role == 'Pääministeri' and actor_last == 'Aho':
+        first_name = 'E'  # to avoid Raila Aho
+
     return first_name, actor_last, role.strip(), speech_type
 
 
@@ -180,172 +189,217 @@ def check_time(time):
     return time
 
 
-def find_speaker(member_info, actor_first, last, party, date, not_found):
-    if 'uhemies' in party:
-        return actor_first, party
+def find_chairman(role, date):
+    # find the chairman by role and date
+    role = re.sub("-|' ?", "", role)
+    role = role.strip()
+
+    chair = member_info[(member_info['role_label'] == role.lower(
+    )) & (member_info['parl_period_start'] <= pd.to_datetime(date)) & (member_info['parl_period_end'] >= pd.to_datetime(date))]
+
+    if chair.empty:
+        not_found.append(','.join([role, date]))
+        return {
+            'uri': '',
+            'first': '',
+            'lastname': '',
+            'gender': '',
+            'birth': '',
+            'role': role,
+            'party': '',
+            'party_uri': '',
+            'speechtype': 'PuhemiesPuheenvuoro',
+            'group': ''
+        }
+
+    chair_details = {
+        'uri': chair['id'].values[0],
+        'first': chair['given'].values[0],
+        'lastname': chair['family'].values[0],
+        'gender': chair['gender'].values[0],
+        'birth': chair['birth'].values[0],
+        'role': role,
+        'speechtype': 'PuhemiesPuheenvuoro'
+    }
+
+    # Party details are often on a separete row, find them by id and date
+    chair_party = member_info[(member_info['id'] == chair_details['uri']) & (
+        member_info['parl_period_start'] <= pd.to_datetime(date)) & (member_info['parl_period_end'] >= pd.to_datetime(date)) & (member_info.party.notnull())]
+
+    if not chair_party.empty:
+        chair_details['party'] = chair_party['party'].values[0].strip(
+            '.').upper()
+        chair_details['party_uri'] = chair_party['party_ids'].values[0]
+        chair_details['group'] = chair_party['group_id'].values[0]
+    else:
+        chair_details['party'] = ''
+        chair_details['party_uri'] = ''
+        chair_details['group'] = ''
+
+    # pprint(chair_details)
+    return chair_details
+
+
+def extract_details(row, role, last):
+    mp = {
+        'uri': row['id'],
+        'first': row['given'],
+        'lastname': last,
+        'gender': row['gender'],
+        'birth': row['birth'],
+        'role': role.strip(),
+        'party': row['party'],
+        'party_uri': row['party_ids'],
+        'group': row['group_id']
+    }
+
+    return mp
+
+
+def find_MP(firstname, last, role, date):
+    mp = dict()
 
     if not last.strip():
-        return actor_first, party
+        not_found.append(','.join([firstname, last, role]))
+        return {
+            'uri': '',
+            'first': firstname,
+            'lastname': '',
+            'gender': '',
+            'birth': '',
+            'role': role.strip(),
+            'party': '',
+            'party_uri': '',
+            'group': ''
+        }
 
-    if '-' in actor_first:
-        temp = actor_first.partition('-')[0]
-        actor_first = temp.strip('.')
+    if '-' in firstname:
+        temp = firstname.partition('-')[0]
+        firstname = temp.strip('.')
 
-    if '.' in actor_first:
-        actor_first = actor_first.partition('.')[0]
+    if '.' in firstname:
+        firstname = firstname.partition('.')[0]
 
-    speech_date = time.strptime(date, '%Y-%m-%d')
+    speech_date = pd.to_datetime(date)
 
-    # first run considering only the "primary" lastname and primary and
-    for row in member_info[1:]:
-        if row[8]:  # started as MP
-            row_start = time.strptime(row[8], '%Y-%m-%d')
-            if row[9]:  # ended as MP
-                row_end = time.strptime(row[9], '%Y-%m-%d')
-                if (row[2] == actor_last.strip()):
-                    if actor_first.strip():
-                        if (row[3] and row[3].startswith(actor_first)
-                                and row_end >= speech_date >= row_start):
-                            if not party.strip():
-                                return row[3], row[10].strip('.').upper()
-                            else:
-                                return row[3], party
+    # first run considering only the "primary" lastname and primary first name
+    for i, row in member_info.iterrows():
+        if pd.notnull(row['parl_period_start']):
+            if pd.notnull(row['parl_period_end']):
+                if (row['family'] == last.strip()):
+                    if firstname.strip():
+                        if (row['given'].startswith(firstname) and row['parl_period_end'] >= speech_date >= row['parl_period_start']):
+                            mp = extract_details(row, role, last)
+                            break
                     else:
-                        if row_end >= speech_date >= row_start:
-                            if not party.strip():
-                                return row[3], row[10].strip('.').upper()
-                            else:
-                                return row[3], party
+                        if row['parl_period_end'] >= speech_date >= row['parl_period_start']:
+                            mp = extract_details(row, role, last)
+                            break
             else:
-                if (row[2] == actor_last.strip()):
-                    if actor_first.strip():
-                        if (row[3] and row[3].startswith(actor_first) and speech_date >= row_start):
-                            if not party.strip():
-                                return row[3], row[10].strip('.').upper()
-                            else:
-                                return row[3], party
+                if (row['family'] == last.strip()):
+                    if firstname.strip():
+                        if (row['given'].startswith(firstname) and speech_date >= row['parl_period_start']):
+                            mp = extract_details(row, role, last)
+                            break
                     else:
-                        if speech_date >= row_start:
-                            if not party.strip():
-                                return row[3], row[10].strip('.').upper()
-                            else:
-                                return row[3], party
+                        if speech_date >= row['parl_period_start']:
+                            mp = extract_details(row, role, last)
+                            break
 
-    # second run trying alternative labels
-    for row in member_info[1:]:
-        if (row[8] and row[4]):  # started as MP + alternative names exist
-            alters = [] if row[4] is None else row[4].split('; ')
-            row_start = time.strptime(row[8], '%Y-%m-%d')
-            if row[9]:  # ended as MP
-                row_end = time.strptime(row[9], '%Y-%m-%d')
-                if (actor_last.strip() in alters):
-                    if actor_first.strip():
-                        if (row[3] and row[3].startswith(actor_first)  # actor_first in row[3]
-                                and row_end >= speech_date >= row_start):
-                            if not party.strip():
-                                return row[3], row[10].strip('.').upper()
-                            else:
-                                return row[3], party
-                    else:
-                        if row_end >= speech_date >= row_start:
-                            if not party.strip():
-                                return row[3], row[10].strip('.').upper()
-                            else:
-                                return row[3], party
-            else:
-                if (actor_last.strip() in alters):
-                    if actor_first.strip():
-                        if (row[3] and row[3].startswith(actor_first) and speech_date >= row_start):
-                            if not party.strip():
-                                return row[3], row[10].strip('.').upper()
-                            else:
-                                return row[3], party
-                    else:
-                        if speech_date >= row_start:
-                            if not party.strip():
-                                return row[3], row[10].strip('.').upper()
-                            else:
-                                return row[3], party
-    not_found.append(','.join([actor_first, actor_last, party]))
-    return actor_first, party
+# if not found, second run trying alternative labels
+    if not 'uri' in mp:
+        for i, row in member_info.iterrows():
+            # started as MP + alternative names exist
+            if pd.notnull(row['parl_period_start']) and pd.notnull(row['other_family_names']):
+                alters = row['other_family_names'].split('; ')
+                if pd.notnull(row['parl_period_end']):
+                    if (last.strip() in alters):
+                        if firstname.strip():
+                            if (row['given'].startswith(firstname)
+                                    and row['parl_period_end'] >= speech_date >= row['parl_period_start']):
+                                mp = extract_details(row, role, last)
+                                break
+                        else:
+                            if row['parl_period_end'] >= speech_date >= row['parl_period_start']:
+                                mp = extract_details(row, role, last)
+                                break
+                else:
+                    if (last.strip() in alters):
+                        if firstname.strip():
+                            if (row['given'].startswith(firstname) and speech_date >= row['parl_period_start']):
+                                mp = extract_details(row, role, last)
+                                break
+                        else:
+                            if speech_date >= row['parl_period_start']:
+                                mp = extract_details(row, role, last)
+                                break
 
 
-def correct_party(party, lastname, date):
-    current_date = time.strptime(date, '%Y-%m-%d')
-    if 'KOK.;NUORSUOMALAINEN PUOLUE' == party:
-        return 'NUORSUOMALAINEN PUOLUE'
+# If party was missing, try to find it from another row
+    if 'uri' in mp and (not mp['party'] or type(mp['party']) == float):
+        mp_party = member_info[(member_info['id'] == mp['uri']) & (
+            member_info['parl_period_start'] <= pd.to_datetime(date)) & (member_info['parl_period_end'] >= pd.to_datetime(date)) & (member_info.party.notnull())]
 
-    if 'KESK.;SMP' == party:
-        if lastname.strip() == 'Vennamo':
-            return 'SMP'
-        if current_date >= time.strptime('1994-02-07', '%Y-%m-%d'):
-            return 'KESK'
-        return 'SMP'
+        if not mp_party.empty:
+            mp['party'] = mp_party['party'].values[0]
+            mp['party_uri'] = mp_party['party_ids'].values[0]
+            mp['group'] = mp_party['group_id'].values[0]
 
-    if 'RKP;SDP;SKDL' == party:
-        return 'RKP'
+    if not 'uri' in mp:
+        not_found.append(','.join([firstname, last, role]))
+        mp = {
+            'uri': '',
+            'first': firstname,
+            'lastname': last,
+            'gender': '',
+            'birth': '',
+            'role': role.strip(),
+            'party': '',
+            'party_uri': '',
+            'group': ''
+        }
 
-    if 'SKP;SKDL;VAS' in party or 'SKDL;DEVA;VAS' == party or 'SKDL;VAS' == party:
-        if lastname.strip() == 'Tennilä':
-            if time.strptime('1990-09-10', '%Y-%m-%d') >= current_date >= time.strptime('1986-06-05', '%Y-%m-%d'):
-                return'DEVA'
-            elif time.strptime('1986-06-04', '%Y-%m-%d') >= current_date:
-                return 'SKDL'
-        return 'VAS'
+    if type(mp['party']) == float:  # NaN
+        mp['party'] = ''
+    else:
+        mp['party'] = mp['party'].strip('.').upper()
+    # edit here to not cause error on NaN
 
-    if 'KP;KESK' == party:
-        if current_date >= time.strptime('2016-03-08', '%Y-%m-%d'):
-            return 'KP'
-        return 'KESK'
-
-    if 'SKP;SKDL' == party:
-        return 'SKDL'
-
-    if 'SDP;SKDL' == party:
-        if current_date.tm_year >= 1945:
-            return 'SKDL'
-        return 'SDP'
-
-    if 'SKP;SDP;SKDL' == party:
-        # rydberg kaisu-mirjami
-        if current_date >= time.strptime('1945-04-06', '%Y-%m-%d'):
-            return 'SKDL'
-        elif current_date <= time.strptime('1941-01-31', '%Y-%m-%d'):
-            return 'SPD'
-        else:
-            return party  # not really in SKP but "Kuusikko"?
-
-    if 'SKP;SDP' == party:
-        return 'SPD'
-
-    if 'KESK.;KOK.' == party:
-        if current_date.year >= 1924:
-            return 'KESK'
-        return 'KOK'
-
-    if 'KP;LKP' == party:
-        if current_date.tm_year >= 1962:
-            return 'LKP'
-        return 'KP'
-
-    return party
+    # pprint(mp)
+    return mp
 
 
-# read raw(minimal formatting) csv.file
+###########################################################################################
+# Clean raw 20th century csv and find speaker details from Actors of Parliament ontology  #
+###########################################################################################
+
 filename = sys.argv[1]
 cleaned_rows = []
-member_info = []
-not_found = []
 csv.field_size_limit(sys.maxsize)
-with open('python_csv_parliamentMembers.csv') as f:
-    reader = csv.reader(f, delimiter='\t')
-    member_info = list(reader)
+
+members = pd.read_csv('parliamentMembers.csv', sep='\t')
+
+
 with open(filename, newline='') as csvfile:
     reader = csv.reader(csvfile, delimiter=',')
     index = 0
     current_session = ''
     previous_sessions = {}
-    for row in reader:
+    party_roles = {}
+    rows = list(reader)
+
+    # filter out some rows based on date for efficiency
+    last_date = clean_date(rows[-1][1])
+
+    members['parl_period_start'] = pd.to_datetime(
+        members['parl_period_start'], format='%Y-%m-%d')
+    members['parl_period_end'] = pd.to_datetime(
+        members['parl_period_end'], format='%Y-%m-%d')
+
+    member_info = members[
+        members['parl_period_start'] <= pd.to_datetime(last_date)]
+
+    for row in rows:
         if not row[6].strip():
             continue
         index += 1
@@ -358,7 +412,11 @@ with open(filename, newline='') as csvfile:
         topic = remove_hyphens(row[5])
         content = remove_hyphens(row[6])
 
+        topic = re.sub('[\|\[!]+', '', topic).strip()
+        topic = topic.rstrip(':')
+
         original_actor = original_actor.partition('(vas')[0].strip()
+        speaker = dict()
 
         if session != current_session:
             previous_sessions[current_session] = index
@@ -372,12 +430,22 @@ with open(filename, newline='') as csvfile:
 
         speech_id = form_speechID(session, index)
 
-        actor_first, actor_last, party, speech_type = clean_actor(
+        firstname, actor_last, role, speech_type = clean_actor(
             actor.strip(), date)
         actor_last = actor_last.strip('—')
-        actor_first, party = find_speaker(
-            member_info, actor_first, actor_last, party, date, not_found)
-        party = correct_party(party, actor_last, date)
+
+        if '(vas-<REMOVE>' in actor_last:
+            actor_last = actor_last.partition('(')[0]
+            speech_type = 'Vastauspuheenvuoro'
+
+        if 'uhemies' in role:
+            speaker = find_chairman(role, date)
+        else:
+            speaker = find_MP(
+                firstname, actor_last, role, date)
+            if not speaker['role'] and re.compile('[EFB]d[\.,]').search(original_actor):
+                speaker['role'] = 'Kansanedustaja'
+
         lang = ''
 
         if content.startswith('(ruotsiksi)'):
@@ -393,11 +461,6 @@ with open(filename, newline='') as csvfile:
                 lang = ':'.join(tags)
             except:
                 lang = ''
-        # print(speech_id)
-
-        if '(vas-<REMOVE>' in actor_last:
-            actor_last = actor_last.partition('(')[0]
-            speech_type = 'Vastauspuheenvuoro'
 
         if '10) Tuontiviikon järjestäminen Turussa siten kuin Turun metallityöväen ammattiosasto' in topic\
                 or '5) Sosiaali- ja terveysviranomaisten on huoleh' in topic:
@@ -415,10 +478,32 @@ with open(filename, newline='') as csvfile:
         content = re.sub('- [:;]+ ', '', content)
         speech_type = speech_type.replace('-', '').title()
 
-        cleaned_rows.append([speech_id, session, date, start.strip(), end, actor_first,
-                             actor_last, party, topic, content, speech_type, ' ', ' ', row[8], lang, original_actor, row[7]])
+        if not 'speechtype' in speaker:
+            if speech_type.strip():
+                speaker['speechtype'] = speech_type
+            else:
+                speaker['speechtype'] = 'Puheenvuoro'
 
+        # find party's position
+        res = ''
+        if speaker['uri']:
+            p = speaker['party']
+            if date in party_roles and p in party_roles[date]:
+                res = party_roles[date][p]
+            else:
+                uri = speaker['uri'].rpartition('/')[2]
+                try:
+                    res = sp.find(date=date, member=uri)['type']
+                    if not date in party_roles:
+                        party_roles[date] = {}
+                    party_roles[date][p] = res
+                except:
+                    pass
 
+            #print(last, speech_row[date_ix], uri, '\t-->', res)
+
+        cleaned_rows.append([speech_id, session, date, start.strip(), end, speaker['first'],
+                             speaker['lastname'], speaker['role'], speaker['party'], topic, content, speaker['speechtype'], speaker['uri'], speaker['gender'], speaker['birth'], speaker['party_uri'], res, speaker['group'], row[8], lang, original_actor, row[7]])
 # save to csv.file
 output_file = filename[:-8]
 csv.field_size_limit(sys.maxsize)
@@ -429,6 +514,8 @@ cleaned_rows.sort(key=sort_sessions)
 
 with open('{:s}.csv'.format(output_file), 'w', newline='') as save_to:
     writer = csv.writer(save_to, delimiter=',')
+    writer.writerow(['speech_id', 'session', 'date', 'start_time', 'end_time', 'given', 'family', 'role', 'party', 'topic',
+                     'content', 'speech_type', 'mp_uri', 'gender', 'birth', 'party_uri', 'parliamentary_role', 'group_uri', 'link', 'lang', 'name_in_source', 'page'])
     writer.writerows(cleaned_rows)
 
 # pprint(set(not_found))

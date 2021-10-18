@@ -171,9 +171,9 @@ def topic_details(row, topic):
 def speech_starters(row, row2, row3):
     speech_start = re.compile("^[E|F]d[\.,]( af| von| v\.)? ?[A-ZÅÄÖ].*[:;]")
     speech_start2 = re.compile(
-        "^[A-ZÅÄÖ].*iniste[rt]i (af|von|v\.)? ?[A-ZÅÄÖ].*[:;]")
+        "^[A-ZÅÄÖ][^(:]*iniste[rt]i (af|von|v\.)? ?[A-ZÅÄÖ].*[:;]")
     long_title = re.compile(
-        '^[A-ZÅÄÖ].*iniste[rt]i (af|von|v\.)? ?[A-ZÅÄÖ].*-$')
+        '^[A-ZÅÄÖ][^(:]*iniste[rt]i (af|von|v\.)? ?[A-ZÅÄÖ].*-$')
     long_title2 = re.compile('^[A-ZÅÄÖa-zåäö]+[;:]')
     two_lines1 = re.compile("^[E|F]d[\.,] (af|von|v\.)? ?[A-ZÅÄÖ].*\(va")
     two_lines2 = re.compile("[a-z]*ro\) ?:")
@@ -848,7 +848,7 @@ def main(filename):
             writer.writerow(
                 [all_speeches[i][0], all_speeches[i][1], session_times[all_speeches[i][0]]['start'].strip('.'),
                  end.strip('.'), all_speeches[i][2], all_speeches[i][3], all_speeches[i][4], all_speeches[i][5], all_speeches[i][6]])
-    print(len(all_speeches))
+    # print(len(all_speeches))
 
 
 if __name__ == "__main__":

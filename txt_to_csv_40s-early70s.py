@@ -45,7 +45,7 @@ def question_enders(row):
             or 'Yleiskeskustelussa ei kukaan halua pu' in row\
             or 'Kun tämä on tapahtunut, toteaa' in row\
             or 'Eduskunta on siis hyväksynyt' in row\
-            or row=='Pöydällepanot:':
+            or row == 'Pöydällepanot:':
         return True
     return False
 
@@ -68,7 +68,8 @@ def topic_starter(row, prev_row, second_prev_row):
     account = re.compile('^Valtioneuvoston talouspoliittinen selonteko')
     chair_questions = re.compile(
         'Kysymy(s|ksiä) ja [sn]iih[ie]n annettu(ja)? vastau(s|ksia)[\.,]')
-    chair_questions2 = re.compile('Kirjallisia kysymyksiä ja niihin annettuja vas')    
+    chair_questions2 = re.compile(
+        'Kirjallisia kysymyksiä ja niihin annettuja vas')
     members = re.compile('Valiokunta?ie?n jäsenet.')
     agenda = re.compile('Päiväjärjestyksessä olevat? asiat?[:;]')
     announcements = re.compile('[HIF]l?moitusasiat? ?[:;]')
@@ -99,7 +100,7 @@ def topic_enders(row, row2, row3):
     if 'Puhemiehen paikalle asetuttuaan' in row:
         return True
     if re.compile('T?E?L?o(in|m)m?anpyyn(rt)?(nä?öt|tö)[\.,]?').match(row)\
-        or row.startswith('Vapautusta eduskuntatyöstä saa'): # 'Lomanpyynnöt:
+            or row.startswith('Vapautusta eduskuntatyöstä saa'):  # 'Lomanpyynnöt:
         return True
     if speech_starters(row, row2, row3):
         return True
@@ -137,8 +138,9 @@ def topic_details(row):
 def speech_starters(row, row2, row3):
     speech_start = re.compile("^[E|F]d[\.,] ?(af|von|v\.)? ?[A-ZÅÄÖ].*[:;]")
     speech_start2 = re.compile(
-        "^[A-ZÅÄÖ].*iniste[rt]i (af|von)? ?[A-ZÅÄÖ].*[:;]")
-    long_title = re.compile('^[A-ZÅÄÖ].*iniste[rt]i (af|von)? ?[A-ZÅÄÖ].*-$')
+        "^[A-ZÅÄÖ][^(:]*iniste[rt]i (af|von)? ?[A-ZÅÄÖ].*[:;]")
+    long_title = re.compile(
+        '^[A-ZÅÄÖ][^(:]*iniste[rt]i (af|von)? ?[A-ZÅÄÖ].*-$')
     long_title2 = re.compile('^[A-ZÅÄÖa-zåäö]+[;:]')
     two_lines1 = re.compile("^[E|F]d[\.,] (af|von)? ?[A-ZÅÄÖ].*\(va")
     two_lines2 = re.compile("[a-z]*ro\) ?:")
@@ -151,7 +153,6 @@ def speech_starters(row, row2, row3):
     split_at_Ed = re.compile('(af|von|v\.)? ?[A-ZÅÄÖ].*[:;]')
     ed = re.compile('[E|F]d[\.,]$')
 
-
     if re.search(re.compile('y[\.,] ?m[\.,] '), row):
         return False
     if speech_start.match(row) or speech_start2.match(row) \
@@ -159,7 +160,7 @@ def speech_starters(row, row2, row3):
             or (chairman_knock.match(row) and chairman_knock2.match(row2))\
             or (two_lines1.match(row) and two_lines2.match(row2))\
             or (long_title.match(row) and long_title2.match(row2))\
-            or  (ed.match(row) and (split_at_Ed.match(row2) or (not row2 and split_at_Ed.match(row3))))\
+            or (ed.match(row) and (split_at_Ed.match(row2) or (not row2 and split_at_Ed.match(row3))))\
             or 'Ikäpuhemies:' in row or '(vastauspuheenvuoro)' in row:  # ':' missing
         return True
     return False
@@ -227,8 +228,8 @@ def acceptance(row):
 
 
 def get_speaker(all_):
-    all_= re.sub('\n+', '', all_)
-    all_= re.sub(' +', ' ', all_)
+    all_ = re.sub('\n+', '', all_)
+    all_ = re.sub(' +', ' ', all_)
     if ('(vastauspuheenvuoro)' in all_ and not 'vuoro):' in all_ and not 'vuoro);' in all_
             and not 'vuoro) :' in all_ and not 'vuoro) ;' in all_):
         all_ = all_.replace('vuoro)', 'vuoro):', 1)
@@ -359,25 +360,26 @@ def not_content(content, i):
 
 
 def start_of_swedish_translation(row, row2):
-    p=re.compile('on [rtv]uotsinkielisenä näin kuuluva[;:]')
-    p2=re.compile('Ruotsinkielinen (vastaus|puhe|saarna) o(li|n) näin kuuluva[;:]')
-    p3=re.compile('Ruotsinkielisenä ')
-    p1_1=re.compile('o(n|li) [rvt]uotsin[a-zä]*\-')
-    p1_2=re.compile('näin kuuluva[:;]')
-    p2_1=re.compile('o(n|li) [rvt]uot[a-zä]*\-')
-    p2_2=re.compile('kielisenä näin kuuluva[:;]')
-    p3_1=re.compile('o(n|li) ([rtv]uotsinkielisenä|ruotsiksi)')
-    p3_2=re.compile('kuuluva[:;]')
+    p = re.compile('on [rtv]uotsinkielisenä näin kuuluva[;:]')
+    p2 = re.compile(
+        'Ruotsinkielinen (vastaus|puhe|saarna) o(li|n) näin kuuluva[;:]')
+    p3 = re.compile('Ruotsinkielisenä ')
+    p1_1 = re.compile('o(n|li) [rvt]uotsin[a-zä]*\-')
+    p1_2 = re.compile('näin kuuluva[:;]')
+    p2_1 = re.compile('o(n|li) [rvt]uot[a-zä]*\-')
+    p2_2 = re.compile('kielisenä näin kuuluva[:;]')
+    p3_1 = re.compile('o(n|li) ([rtv]uotsinkielisenä|ruotsiksi)')
+    p3_2 = re.compile('kuuluva[:;]')
 
     if re.search(p, row) or re.search(p2, row):
         return True
-    if re.search(p1_1, row) and re.search(p1_2,row2):
+    if re.search(p1_1, row) and re.search(p1_2, row2):
         return True
-    if re.search(p2_1, row) and re.search(p2_2,row2):
+    if re.search(p2_1, row) and re.search(p2_2, row2):
         return True
-    if re.search(p3_1, row) and re.search(p3_2,row2):
+    if re.search(p3_1, row) and re.search(p3_2, row2):
         return True
-    if re.search(p3, row) and re.search(p3_2,row2):
+    if re.search(p3, row) and re.search(p3_2, row2):
         return True
     return False
 
@@ -390,10 +392,10 @@ def edit_content(content):
         if not_content(content, i):
             continue
         elif (not content[i].strip() and content[i-1].strip() and not not_content(content, i-1)
-                and i+1 < len(content) and not not_content(content, i+1) and len(content[i+1]) > 0 
+                and i+1 < len(content) and not not_content(content, i+1) and len(content[i+1]) > 0
                 and content[i+1][0].isupper()):
-                #empty row (and) is not the first (and) row-1 is real content (and) row is not last row
-                #(and) row+1 has real content (and) starts with capital
+            # empty row (and) is not the first (and) row-1 is real content (and) row is not last row
+            # (and) row+1 has real content (and) starts with capital
             new.append('\n')
         else:
             row = re.sub('=|€|\*|<<|^>> | ?\|', '', content[i])
@@ -629,8 +631,8 @@ def main(filename):
         if acceptance(rows[i]):
             speech = False
         if start_of_swedish_translation(rows[i], rows[i+1]):
-            speech=False
-        if (speech_starters(rows[i], rows[i+1], '' if i+2>=len(rows) else rows[i+2]) and not index):  # Risk?
+            speech = False
+        if (speech_starters(rows[i], rows[i+1], '' if i+2 >= len(rows) else rows[i+2]) and not index):  # Risk?
             speech = True
             topic = False
             details = False
@@ -651,7 +653,7 @@ def main(filename):
                 speech = False
                 details = False
                 topic = True
-            if topic_enders(rows[i], rows[i+1], '' if i+2>=len(rows) else rows[i+2]):
+            if topic_enders(rows[i], rows[i+1], '' if i+2 >= len(rows) else rows[i+2]):
                 topic = False
         if (not index and topic_details(rows[i])):
             #speech = False
@@ -709,7 +711,7 @@ def main(filename):
             writer.writerow(
                 [all_speeches[i][0], all_speeches[i][1], session_times[all_speeches[i][0]]['start'],
                  end, all_speeches[i][2], all_speeches[i][3], all_speeches[i][4], all_speeches[i][5], all_speeches[i][6]])
-    print(len(all_speeches))
+    # print(len(all_speeches))
 
 
 if __name__ == "__main__":

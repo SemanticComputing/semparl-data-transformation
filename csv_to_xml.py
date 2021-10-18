@@ -123,7 +123,7 @@ def check_if_interruptor_named(content, year):
     return firstname, lastname
 
 
-def find_interrupter_by_lastname(first, last, date, member_info, all_speakers):
+def find_interrupter_by_lastname(first, last, date, member_info):
     # for years up to 2010 where we don't know interruptors first name, only possible initials
     speech_date = time.strptime(date, '%Y-%m-%d')
 
@@ -133,57 +133,66 @@ def find_interrupter_by_lastname(first, last, date, member_info, all_speakers):
     if '.' in first:  # G.G.
         first = first.partition('.')[0]
 
+    first_mpi = member_info[0].index('given')
+    first_alters_mpi = member_info[0].index('other_given_names')
+    last_mpi = member_info[0].index('family')
+    alters_mpi = member_info[0].index('other_family_names')
+    party_mpi = member_info[0].index('party')
+    start_mpi = member_info[0].index('parl_period_start')
+    end_mpi = member_info[0].index('parl_period_end')
+    gender_mpi = member_info[0].index('gender')
+    birth_mpi = member_info[0].index('birth')
+
     # first run considering only the "primary" lastname
     for row in member_info[1:]:
-        if row[8]:  # started as MP
-            row_start = time.strptime(row[8], '%Y-%m-%d')
-            if row[9]:  # ended as MP
-                row_end = time.strptime(row[9], '%Y-%m-%d')
-                if (row[2] == last.strip()):
-                    if first.strip():
-                        if (row[3] and row[3].startswith(first)
-                                and row_end >= speech_date >= row_start):
-                            return row[3]
-                    else:
-                        if row_end >= speech_date >= row_start:
-                            return row[3]
-            else:
-                if (row[2] == last.strip()):
-                    if first.strip():
-                        if (row[3] and row[3].startswith(first) and speech_date >= row_start):
-                            return row[3]
-                    else:
-                        if speech_date >= row_start:
-                            return row[3]
+        parl_start = time.strptime(
+            row[start_mpi], '%Y-%m-%d') if row[start_mpi] else None
+        parl_end = time.strptime(
+            row[end_mpi], '%Y-%m-%d') if row[end_mpi] else None
 
-    # second run trying alternative labels
+        if parl_start and parl_end:  # started as MP
+            if (row[last_mpi] == last) and row[first_mpi].startswith(first) and parl_start <= speech_date <= parl_end:
+                return row[first_mpi], row[party_mpi], row[birth_mpi], row[gender_mpi]
+        elif parl_start:
+            if (row[last_mpi] == last) and row[first_mpi].startswith(first) and parl_start <= speech_date:
+                return row[first_mpi], row[party_mpi], row[birth_mpi], row[gender_mpi]
+
+    # # second run trying alternative labels
     for row in member_info[1:]:
-        if (row[8] and row[4]):  # started as MP + alternative names exist
-            alters = [] if row[4] is None else row[4].split('; ')
-            row_start = time.strptime(row[8], '%Y-%m-%d')
-            if row[9]:  # ended as MP
-                row_end = time.strptime(row[9], '%Y-%m-%d')
-                if (last.strip() in alters):
-                    if first.strip():
-                        if (row[3] and row[3].startswith(first)
-                                and row_end >= speech_date >= row_start):
-                            return row[3]
-                    else:
-                        if row_end >= speech_date >= row_start:
-                            return row[3]
-            else:
-                if (last.strip() in alters):
-                    if first.strip():
-                        if (row[3] and row[3].startswith(first) and speech_date >= row_start):
-                            return row[3]
-                    else:
-                        if speech_date >= row_start:
-                            return row[3]
+        parl_start = time.strptime(
+            row[start_mpi], '%Y-%m-%d') if row[start_mpi] else None
+        parl_end = time.strptime(
+            row[end_mpi], '%Y-%m-%d') if row[end_mpi] else None
 
-    return ''
+        alters = row[alters_mpi].split('; ') if row[alters_mpi] else []
+        first_alters = row[first_alters_mpi].split(
+            '; ') if row[first_alters_mpi] else []
+
+        if parl_start and parl_end:  # started as MP
+            if (row[last_mpi] == last or last in alters) and parl_start <= speech_date <= parl_end:
+                if first:
+                    if row[first_mpi].startswith(first):
+                        return row[first_mpi], row[party_mpi], row[birth_mpi], row[gender_mpi]
+                    for f in first_alters:
+                        if f.startswith(first):
+                            return row[first_mpi], row[party_mpi], row[birth_mpi], row[gender_mpi]
+                else:
+                    return row[first_mpi], row[party_mpi], row[birth_mpi], row[gender_mpi]
+        elif parl_start:
+            if (row[last_mpi] == last or last in alters) and parl_start <= speech_date:
+                if first:
+                    if row[first_mpi].startswith(first):
+                        return row[first_mpi], row[party_mpi], row[birth_mpi], row[gender_mpi]
+                    for f in first_alters:
+                        if f.startswith(first):
+                            return row[first_mpi], row[party_mpi], row[birth_mpi], row[gender_mpi]
+                else:
+                    return row[first_mpi], row[party_mpi], row[birth_mpi], row[gender_mpi]
+
+    return '', '', '', ''
 
 
-def find_party(first, last, member_info, date):
+def find_party(first, last, date):
     speech_date = time.strptime(date, '%Y-%m-%d')
     party = ''
     for row in member_info[1:]:
@@ -262,23 +271,95 @@ def build_tree(speeches, year, member_info):
     current_document = ''
     current_topic = '-'
     year = year.partition('_')[0]  # 1975_II
-    for row in speeches:
-        speech_id, document, date, start, end = row[0].replace(
-            '_', '.'), row[1], row[2], row[3], row[4]
-        firstname, lastname, party = row[5].strip(
-        ), row[6].strip(), row[7].strip(),
-        topic, content, reply = row[8], row[9], row[10]
-        status, version, link = row[11], row[12].lstrip('versio'), row[13]
+
+    speech_id_ix = speeches[0].index('speech_id')
+    session_ix = speeches[0].index('session')
+    date_ix = speeches[0].index('date')
+    start_ix = speeches[0].index('start_time')
+    end_ix = speeches[0].index('end_time')
+
+    first_ix = speeches[0].index('given')
+    last_ix = speeches[0].index('family')
+    role_ix = speeches[0].index('role')
+    party_ix = speeches[0].index('party')
+    parl_role_ix = speeches[0].index('parliamentary_role')
+    gender_ix = speeches[0].index('gender')
+    birth_ix = speeches[0].index('birth')
+
+    topic_ix = speeches[0].index('topic')
+    content_ix = speeches[0].index('content')
+    type_ix = speeches[0].index('speech_type')
+    lang_ix = speeches[0].index('lang')
+    link_ix = speeches[0].index('link')
+    orig_name = speeches[0].index('name_in_source')
+
+    try:  # ->1999
+        page_ix = speeches[0].index('page')
+    except:
+        page_ix = ''
+
+    try:  # 2000->
+        status_ix = speeches[0].index('status')
+        version_ix = speeches[0].index('version')
+    except:
+        status_ix, version_ix = '', ''
+
+    try:  # 2015 ->
+        speech_status_ix = speeches[0].index('speech_status')  # ei käytössä?
+        speech_version_ix = speeches[0].index('speech_version')  # ei käytössä?
+        speech_start_ix = speeches[0].index('speech_start')
+        speech_end_ix = speeches[0].index('speech_end')
+    except:
+        speech_status_ix, speech_version_ix, speech_start_ix, speech_end_ix = '', '', '', ''
+
+    #######################
+    # Go through speeches #
+    #######################
+    for row in speeches[1:]:
+        speech_id = row[speech_id_ix]
+        document = row[session_ix]
+        date = row[date_ix]
+        start = row[start_ix]
+        end = row[end_ix]
+
+        firstname = row[first_ix].strip()
+        lastname = row[last_ix].strip()
+        party = row[party_ix].strip()
+        role = row[role_ix].strip()
+        gender = row[gender_ix]
+        birth = row[birth_ix]
+        lang = row[lang_ix]
+
+        topic = row[topic_ix]
+        content = row[content_ix].replace('\n', '').strip()
+        speech_type = row[type_ix]
+
+        link = row[link_ix]
+
+        status, version = '', ''
         speech_start, speech_end, page = '', '', ''
-        content = content.replace('\n', '')
-        speakers_party = ''
-        if int(year) > 2014:
-            if len(row) > 17:
-                speech_start = row[17]
-            if len(row) > 18:
-                speech_end = row[18]
-        if int(year) < 1999 or (int(year) == 1999 and int(document.partition('/')[0]) < 86):
-            page = row[16]
+        speech_status, speech_version = '', ''
+
+        if page_ix and len(row) > page_ix:
+            page = row[page_ix]
+
+        if status_ix and len(row) > status_ix:
+            status = row[status_ix]
+
+        if version_ix and len(row) > version_ix:
+            version = row[version_ix].lstrip('versio')
+
+        if speech_status_ix and len(row) > speech_status_ix:
+            speech_status = row[speech_status_ix]
+
+        if speech_version_ix and len(row) > speech_version_ix:
+            version = row[speech_version_ix].lstrip('versio')
+
+        if speech_start_ix and len(row) > speech_start_ix:
+            speech_start = row[speech_start_ix]
+
+        if speech_end_ix and len(row) > speech_end_ix:
+            speech_end = row[speech_end_ix]
 
         if document != current_document:
             current_document = document
@@ -318,6 +399,7 @@ def build_tree(speeches, year, member_info):
         speaker = '{:s}_{:s}'.format(firstname, lastname)
         speaker = speaker.replace(' ', '_')
         speaker = re.sub("[,&\|'!\]\)\(\+\$\d+]", '', speaker)
+        speaker_role_party = speaker + role + party  # !!!!!!!!!!!!
         if speaker not in all_speakers:
             all_speakers.append(speaker)
             person = SubElement(listPerson, 'person', {
@@ -327,59 +409,40 @@ def build_tree(speeches, year, member_info):
             surname.text = lastname
             forename = SubElement(persName, 'forename')
             forename.text = firstname
+            if gender:
+                if gender.lower() == 'male':
+                    speaker_sex = SubElement(person, 'sex', {'value': 'M'})
+                else:
+                    speaker_sex = SubElement(person, 'sex', {'value': 'F'})
+                speaker_sex.text = gender
+            born_at = SubElement(person, 'birth', {'when': birth})
 
-            if (not party.isupper() and 'uhemies' not in party):
-                # add role to personal information
-                if party:
-                    role = SubElement(persName, 'roleName')
-                    role.text = party
-                speakers_party = find_party(
-                    firstname, lastname, member_info, date)
-                if speakers_party:
-                    s_party = SubElement(person, 'affliation', {
-                        'ref': '#party.' + speakers_party.replace(' ', '_')})
-                    if speakers_party not in all_parties:
-                        all_parties.append(speakers_party)
-                        org = SubElement(listOrg, 'org', {
-                            'xml:id': speakers_party.replace(' ', '_')})
-
-            elif 'uhemies' in party:
-                role = SubElement(persName, 'roleName')
-                role.text = party
+    # add role and party to personal information
+            if role:
+                speaker_role = SubElement(persName, 'roleName')
+                speaker_role.text = role
                 # add chairpeople to taxonomy for referral in utterance 'ana'
-                tag = chairman_tag(party)
-                if party not in all_roles:
-                    all_roles.append(party)
-                    tax_cat = SubElement(taxonomy, 'category', {'xml:id': tag})
-                    catDesc = SubElement(tax_cat, 'catDesc')
-                    term = SubElement(catDesc, 'term')
-                    term.text = party
-                # if name known, find party:
-                if firstname and lastname:
-                    speakers_party = find_party(
-                        firstname, lastname, member_info, date)
-                if speakers_party:
-                    s_party = SubElement(person, 'affliation', {
-                        'ref': '#party.' + speakers_party.replace(' ', '_')})
+                if 'uhemies' in role:
+                    tag = chairman_tag(role)
+                    if role not in all_roles:
+                        all_roles.append(role)
+                        tax_cat = SubElement(
+                            taxonomy, 'category', {'xml:id': tag})
+                        catDesc = SubElement(tax_cat, 'catDesc')
+                        term = SubElement(catDesc, 'term')
+                        term.text = role
 
-            else:
-                if party:
-                    party = re.sub('\.;', '_', party)
-                    affliation = SubElement(person, 'affliation', {
-                        'ref': '#party.' + party.replace(' ', '_')})
-                    if party not in all_parties:
-                        all_parties.append(party)
-                        org = SubElement(listOrg, 'org', {
-                                         'xml:id': party.replace(' ', '_')})
-
-        #  add chair roles to taxonomy
-        if (party.endswith('uhemies') and party not in all_roles):
-            tag = chairman_tag(party)
-            all_roles.append(party)
-            tax_cat = SubElement(taxonomy, 'category', {'xml:id': tag})
-            catDesc = SubElement(tax_cat, 'catDesc')
-            term = SubElement(catDesc, 'term')
-            term.text = party
+            if party:
+                s_party = SubElement(person, 'affliation', {
+                    'ref': '#party.' + party.replace(' ', '_')})
+                if party not in all_parties:
+                    all_parties.append(party)
+                    org = SubElement(listOrg, 'org', {
+                        'xml:id': party.replace(' ', '_')})
+                    if row[parl_role_ix]:
+                        org.set('role', row[parl_role_ix])
+                    else:
+                        org.set('role', 'other')
 
         # one topic in one div, subsequent topicless speeches are in one div
         if topic != current_topic:
@@ -400,7 +463,7 @@ def build_tree(speeches, year, member_info):
         # one speech (with possible interruptions) in one sub-div
         div = SubElement(topic_div, 'div')
         note = SubElement(
-            div, 'note', {'xml:id': speech_id, 'type': 'speaker', 'speechType': reply.strip(), 'link': link})
+            div, 'note', {'xml:id': speech_id, 'type': 'speaker', 'speechType': speech_type.strip(), 'link': link})
         if page:
             note.set('page', page)
         if speech_start:
@@ -408,19 +471,15 @@ def build_tree(speeches, year, member_info):
         if speech_end:
             note.set('end', speech_end)
 
-        if not 'uhemies' in party:
+        if not 'uhemies' in role:
             content = content.replace(':|', ': ')
             speech_parts, num_of_speech_parts = check_interruptions(
-                content.strip())
+                content)
 
             # no interruptions
             if num_of_speech_parts == 0:
                 u = SubElement(
                     div, 'u', {'who': '#{:s}'.format(speaker), 'xml:id': speech_id})
-                # if speech_start:
-                #     u.set('start', speech_start)
-                # if speech_end:
-                #     u.set('end', speech_end)
                 u.text = content.strip()
             # interruptions
             else:
@@ -430,18 +489,19 @@ def build_tree(speeches, year, member_info):
                         first, last = check_if_interruptor_named(
                             part.replace('INTER', ''), year)
                         if last:
-                            if int(year) < 2011:  # first and lastname knows
+                            if int(year) < 2011:  # first and lastname unknown
                                 last = re.sub('Ed\.', '', last)
                                 last = re.sub(
                                     "[,&\|'!\]\)\(\+\$\d+]", '', last)
-                                first = find_interrupter_by_lastname(
-                                    first, last, date, member_info, all_speakers)
+
+                            first, i_party, i_birth, i_gender = find_interrupter_by_lastname(
+                                first.strip(), last.strip(), date, member_info)
 
                             i_speaker = '{:s}_{:s}'.format(first, last)
                             i_speaker = i_speaker.replace(' ', '_')
-                            if first and i_speaker not in all_speakers:
 
-                                all_speakers.append(speaker)
+                            if first and i_speaker not in all_speakers:
+                                all_speakers.append(i_speaker)
                                 person = SubElement(listPerson, 'person', {
                                                     'xml:id': i_speaker})
                                 persName = SubElement(person, 'persName')
@@ -449,6 +509,21 @@ def build_tree(speeches, year, member_info):
                                 surname.text = last
                                 forename = SubElement(persName, 'forename')
                                 forename.text = first
+                                if i_birth:
+                                    born_at = SubElement(
+                                        person, 'birth', {'when': i_birth})
+                                if i_gender:
+                                    if i_gender.lower() == 'male':
+                                        speaker_sex = SubElement(
+                                            person, 'sex', {'value': 'M'})
+                                    else:
+                                        speaker_sex = SubElement(
+                                            person, 'sex', {'value': 'F'})
+                                    speaker_sex.text = i_gender
+                                if i_party:
+                                    s_party = SubElement(person, 'affliation', {
+                                        'ref': '#party.' + i_party.upper().strip('.').replace(' ', '_')})
+
                         vocal = SubElement(div, 'vocal')
                         if first:
                             vocal.set('who', i_speaker)
@@ -473,7 +548,7 @@ def build_tree(speeches, year, member_info):
                         u.text = part
         else:
             u = SubElement(
-                div, 'u', {'who': '#{:s}'.format(speaker), 'xml:id': speech_id, 'ana': '#' + chairman_tag(party)})
+                div, 'u', {'who': '#{:s}'.format(speaker), 'xml:id': speech_id, 'ana': '#' + chairman_tag(role)})
             u.text = content
 
     return root
@@ -487,7 +562,7 @@ def main(year):
         speeches = list(reader)
 
     # read member_info
-    with open('python_csv_parliamentMembers.csv') as f:
+    with open('parliamentMembers.csv') as f:
         reader = csv.reader(f, delimiter='\t')
         member_info = list(reader)
 

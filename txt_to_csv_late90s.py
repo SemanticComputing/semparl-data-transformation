@@ -65,7 +65,7 @@ def topic_enders(row, row2):
     if re.compile('lähetetään [a-zåäö]+neuvoston ehdotuksen').match(row):
         return True
     if re.compile('T?E?L?o(in|m)m?anpyyn(rt)?(nä?öt|tö)[\.,]?').match(row)\
-        or row.startswith('Vapautusta eduskuntatyöstä saa'): # 'Lomanpyynnöt:
+            or row.startswith('Vapautusta eduskuntatyöstä saa'):  # 'Lomanpyynnöt:
         return True
     if speech_starters(row, row2):
         return True
@@ -97,10 +97,11 @@ def topic_details(row):
 
 
 def speech_starters(row, row2):
-    speech_start = re.compile("^[E|F]d[\.,] ?(af|von)? ?[A-ZÅÄÖ].*[^A-ZÅÄÖ][:;]")
+    speech_start = re.compile(
+        "^[E|F]d[\.,] ?(af|von)? ?[A-ZÅÄÖ].*[^A-ZÅÄÖ][:;]")
     speech_start2 = re.compile(
-        "^[A-ZÅÄÖ].*inisteri ?(af|von)? ?[A-ZÅÄÖ].*[:;]")
-    long_title = re.compile('^[A-ZÅÄÖ].*inisteri (af|von)? ?[A-ZÅÄÖ].*-$')
+        "^[A-ZÅÄÖ][^(:]*inisteri ?(af|von)? ?[A-ZÅÄÖ].*[:;]")
+    long_title = re.compile('^[A-ZÅÄÖ][^(:]*inisteri (af|von)? ?[A-ZÅÄÖ].*-$')
     long_title2 = re.compile('^[A-ZÅÄÖa-zåäö]+[;:]')
     two_lines1 = re.compile("^[E|F]d[\.,] (af|von)? ?[A-ZÅÄÖ].*\(va")
     two_lines2 = re.compile("[a-z]*ro\) ?:")
@@ -275,26 +276,26 @@ def not_content(content, i):
     else:
         return False
 
+
 def start_of_swedish_translation(row, row2):
-    p=re.compile('on [rt]uotsinkielisenä näin kuuluva[;:]')
+    p = re.compile('on [rt]uotsinkielisenä näin kuuluva[;:]')
     #p2=re.compile('Ruotsinkielinen vastaus o(li|n) näin kuuluva[;:]')
-    p1_1=re.compile('on [rt]uotsin[a-zä]*\-')
-    p1_2=re.compile('näin kuuluva[:;]')
-    p2_1=re.compile('on [rt]uot[a-zä]*\-')
-    p2_2=re.compile('kielisenä näin kuuluva[:;]')
-    p3_1=re.compile('on [rt]uotsinkielisenä')
-    p3_2=re.compile('kuuluva[:;]')
+    p1_1 = re.compile('on [rt]uotsin[a-zä]*\-')
+    p1_2 = re.compile('näin kuuluva[:;]')
+    p2_1 = re.compile('on [rt]uot[a-zä]*\-')
+    p2_2 = re.compile('kielisenä näin kuuluva[:;]')
+    p3_1 = re.compile('on [rt]uotsinkielisenä')
+    p3_2 = re.compile('kuuluva[:;]')
 
     if re.search(p, row):
         return True
-    if re.search(p1_1, row) and re.search(p1_2,row2):
+    if re.search(p1_1, row) and re.search(p1_2, row2):
         return True
-    if re.search(p2_1, row) and re.search(p2_2,row2):
+    if re.search(p2_1, row) and re.search(p2_2, row2):
         return True
-    if re.search(p3_1, row) and re.search(p3_2,row2):
+    if re.search(p3_1, row) and re.search(p3_2, row2):
         return True
     return False
-
 
 
 def edit_content(content):
@@ -305,8 +306,8 @@ def edit_content(content):
         if not_content(content, i):
             continue
         elif (not content[i].strip() and content[i-1].strip() and not not_content(content, i-1)
-                and i+1 < len(content) and not not_content(content, i+1) and content[i+1][0].isupper()): 
-                #empty row (and) is not the first (and) row-1 is real content (and) row is not last row (and) row+1 has real content (and) starts with capital
+                and i+1 < len(content) and not not_content(content, i+1) and content[i+1][0].isupper()):
+            # empty row (and) is not the first (and) row-1 is real content (and) row is not last row (and) row+1 has real content (and) starts with capital
             new.append('\n')
         else:
             row = re.sub('=|€', '', content[i])
@@ -402,7 +403,7 @@ def main(filename):
         if acceptance(rows[i]):
             speech = False
         if start_of_swedish_translation(rows[i], rows[i+1]):
-            speech=False
+            speech = False
         if speech_starters(rows[i], rows[i+1]):
             speech = True
             topic = False
@@ -477,7 +478,7 @@ def main(filename):
             writer.writerow(
                 [all_speeches[i][0], all_speeches[i][1], session_times[all_speeches[i][0]]['start'],
                  end, all_speeches[i][2], all_speeches[i][3], all_speeches[i][4], all_speeches[i][5], all_speeches[i][6]])
-    print(len(all_speeches))
+    # print(len(all_speeches))
 
 
 if __name__ == "__main__":

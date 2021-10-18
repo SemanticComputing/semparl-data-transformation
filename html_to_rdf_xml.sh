@@ -14,9 +14,12 @@ do
     python3 combine_speeches.py $year
     echo '> Final CSV ready!'
 
+    echo '> Enriching speaker info...'
+    python3 enrich_member_info.py $year
+
     if [[ $year -eq 1999 ]]; then
         mv speeches_1999.csv speeches_1999_b.csv
-        cat speeches_1999_a.csv speeches_1999_b.csv > speeches_1999.csv
+        python3 combine_1999.py
     fi
 
 # Final transformations

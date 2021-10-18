@@ -70,15 +70,15 @@ def get_chairman(text):
 
 
 def parse_speech(s):
-    # print(s)
     s2 = re.sub('\n *', ' ', s.text)
     section = re.sub('\t', '', s2)
+
     if '20, 24, 28, 41, 69, 83, 84, 90 ja 100' in section:
         return '', '', 'Toinen varapuhemies', section
     parts = section.split(':', 1)
     if 'EDPVUORO' in s['class'] or 'EHDOTUS' in s['class'] or 'EDPUHE' in s['class']:
-        speaker = parts[0].split()
-        return ' '.join(speaker[:-2]), speaker[-2], speaker[-1][1:].upper(), parts[1].strip()
+        speaker = parts[0].rstrip('\n').split()
+        return ' '.join(speaker[:-2]), speaker[-2], speaker[-1][1:].upper(), parts[1].rstrip('\n').strip()
     elif 'PMPUHE' in s['class'] or 'PRESPUHE' in s['class']:
         if 'lausu' in section:
             ps = s.find_all('p')
@@ -157,6 +157,8 @@ def main(file):
 
                                     if grandchild.find('h4'):
                                         topic = grandchild.h4.text
+                                    elif grandchild.find('h3'):
+                                        topic = grandchild.h3.text
                                     if grandchild.find('p', re.compile('AK')):
                                         documents = grandchild.find_all(
                                             'p', re.compile('AK'))
@@ -181,7 +183,7 @@ def main(file):
                                             party, topic, speech, status, version, link, discussion
                                         ])
 
-        print(len(all_speeches))
+        # print(len(all_speeches))
         for row in all_speeches:
             writer.writerow([row[0], row[1], '', row[2], row[3], row[4],
                              row[5], row[6], row[7], ' ', row[8], row[9], row[10], row[11]])
