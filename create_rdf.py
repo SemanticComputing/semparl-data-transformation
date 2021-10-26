@@ -297,7 +297,7 @@ def end_day(end_time, date):
 def make_doc_id(document, plen_session, year):
     # Lakialoite n:o 21/1989 vp.
     id_ = ''
-    document = re.sub(' >|,|"|:|<|—|=', '', document)
+    document = re.sub(' >|,|"|<|—|=', '', document)
     if 1994 < int(year) < 2000:
         parts = document.split()
         if not '/' in document:
@@ -355,8 +355,7 @@ def main(year):
         #reader = csv.reader(f, delimiter='\t')
         reader = csv.DictReader(f, delimiter='\t')
         member_info = list(reader)
-    # print(member_info[:2])
-    # sys.exit()
+
 ###############################################################
     g = Graph()  # speeches + interruptions
     sg = Graph()  # sessions + transripts
@@ -470,7 +469,7 @@ def main(year):
             ig.add((doc, RDF.type, semparls.Account))
         elif 'eskustelualoit' in document:
             ig.add((doc, RDF.type, semparls.DebateMotion))
-        elif 'aha-asia-aloit' in document:
+        elif re.search('aha-as[ti]a-aloit', document):
             ig.add((doc, RDF.type, semparls.FinancialMotion))
         elif re.search('((Toi)?[vV]omusaloit|[Aa]nom(\. |us)(ehd(\.|otus)| ?n:o))', document):
             ig.add((doc, RDF.type, semparls.PetitionaryMotion))
@@ -699,7 +698,7 @@ def main(year):
                 # make document_id
                 if (int(year) < 2000 and not(int(year) == 1999 and int(plenary_session) >= 86)):
                     document_id = make_doc_id(document, source_year, year)
-                    document_id = re.sub('\.|\||\]|\[', '', document_id)
+                    document_id = re.sub('\.|\||\]|\[|:', '', document_id)
                 else:
                     if int(year) < 2015:
                         l = document.split('\xa0')

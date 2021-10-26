@@ -76,11 +76,19 @@ def main(year):
             current_session = session
         all_speeches.append(row)
         if row[13]:
-            for drow in discussion_rows[1:]:
-                if drow[12] == row[13]:
-                    drow[7] = row[7]
-                    all_speeches.append(drow)
-                    times[drow[0]]['start'] = drow[2]
+            if '+skt+puh+' in row[13]:
+                for drow in discussion_rows[1:]:
+                    if '+skt+puh+' in drow[12] and session_number(drow[0]) == current_session and drow not in all_speeches:
+                        #drow[7] = row[7]
+                        all_speeches.append(drow)
+                        times[drow[0]]['start'] = drow[2]
+
+            else:
+                for drow in discussion_rows[1:]:
+                    if drow[12] == row[13]:
+                        #drow[7] = row[7]
+                        all_speeches.append(drow)
+                        times[drow[0]]['start'] = drow[2]
     for drow in discussion_rows[1:]:
         if drow not in all_speeches:
             all_speeches.append(drow)
@@ -158,8 +166,6 @@ def main(year):
             # role known, add placeholder for party
             row.insert(7, row[7])
             row[8] = ''
-
-        # print(row[0])
 
     with open('speeches_{:s}.csv'.format(year), 'w') as save_to:
         writer = csv.writer(save_to, delimiter=',')
