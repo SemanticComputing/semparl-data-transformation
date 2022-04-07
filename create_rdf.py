@@ -32,12 +32,12 @@ def find_interruptor(first, last, date):
             if (row['family'] == last):
                 if (row['given'].startswith(first)
                         and parl_start <= speech_date <= parl_end):
-                    return row['id']
+                    return row['id'], row['party_ids']
         elif parl_start:
             if (row['family'] == last):
                 if (row['given'].startswith(first)
                         and parl_start <= speech_date):
-                    return row['id']
+                    return row['id'], row['party_ids']
 
     # second run trying alternative names
     for row in member_info:
@@ -53,14 +53,14 @@ def find_interruptor(first, last, date):
         if (parl_start and parl_end and alters):
             if ((last in alters or last == row['family']) and (row['given'].startswith(first) or first in first_alters)
                     and parl_start <= speech_date <= parl_end):
-                return row['id']
+                return row['id'], row['party_ids']
         elif parl_start and alters:
             if (last in alters):
                 if ((last.strip() in alters or last == row['family']) and (row['given'].startswith(first) or first in first_alters)
                         and parl_start <= speech_date):
-                    return row['id']
+                    return row['id'], row['party_ids']
 
-    return ''
+    return '', ''
 
 
 def check_int_content(m):
@@ -75,6 +75,7 @@ def check_int_content(m):
         '^Pöytäkirjan liite',
         'vastalause$',
         'Tulkki esittää puheenvuorosta suomenkielisen yhteenvedon',
+        '^Liitteet '
     ]
 
     for bad in bad_patterns:
@@ -125,7 +126,7 @@ def check_interrupter(content):
     # return agents
 
 
-def indentify_interrupter(agent, date, year):
+def identify_interrupter(agent, date, year):
     # 2011->
     # Paavo Arhinmäki
     # Ensimmäinen varapuhemies Mauri Pekkarinen
@@ -135,30 +136,30 @@ def indentify_interrupter(agent, date, year):
     # Ed. U-M. Kukkonen | Ed Räisänen | Kanerva
 
     speaker_URI = ''
-    # uris = []
-    # for agent in agents:
+    party_URI = ''
+
     parts = agent.split()
     if int(year) >= 2011:
         if(len(parts) > 1 and parts[-2][0].isupper() and (parts[-1][0].isupper()
                                                           or parts[-1] == 'al-Taee')):
-            speaker_URI = find_interruptor(
+            speaker_URI, party_URI = find_interruptor(
                 parts[-2], parts[-1], date)
     else:
         if len(parts) > 2:  # there might be initials
             if parts[-2] in ['af', 'von']:
-                speaker_URI = find_interruptor(
+                speaker_URI, party_URI = find_interruptor(
                     '', ' '.join(parts[-2:]), date)
             else:
-                speaker_URI = find_interruptor(
+                speaker_URI, party_URI = find_interruptor(
                     parts[-2].strip('.'), parts[-1], date)
         else:
             try:
-                speaker_URI = find_interruptor(
+                speaker_URI, party_URI = find_interruptor(
                     '', parts[-1], date)
             except:
-                speaker_URI = ''
+                speaker_URI, party_URI = '', ''
 
-    return speaker_URI
+    return speaker_URI, party_URI
 
 
 def make_doc_link(document, year):
@@ -328,6 +329,40 @@ def make_doc_id(document, plen_session, year):
             return id_ + '_' + re.sub('/', '_', plen_session)
 
 
+def format_speech_URI(speech_id):
+    """ Edit uri to enable speech ordering by URI"""
+    parts = speech_id.split('_')
+# year
+    uri = parts[0]
+# 1st or 2nd parliamentary session
+    if '1932' in speech_id or '1935' in speech_id:  # extra vp was chronologically first for some reason
+        if 'II' in speech_id:
+            uri += '_1_'
+        else:
+            uri += '_2_'
+    elif '1917_II' in speech_id:
+        uri += '_3_'
+    elif 'XX' in speech_id:
+        uri += '_2_'
+    elif '_II' in speech_id:
+        uri += '_2_'
+    else:
+        uri += '_1_'
+# plenary session
+    pl = parts[-2]
+
+    while len(pl) < 3:
+        pl = '0' + pl
+    uri += pl+'_'
+
+# speech number
+    n = parts[-1]
+    while len(n) < 3:
+        n = '0' + n
+    uri += n
+
+    return uri
+
 ###############################################################
 
 
@@ -401,10 +436,6 @@ def main(year):
     current_topic = ''
     item_index = 0
 
-# 3
-    # **************************************************************************
-    # For cathering details about LAS assigning languages
-    language_oddities = []
     # **************************************************************************
  # create parliamentary session instance and link it to electoral term
     parliamentary_session_URI = ''
@@ -483,7 +514,6 @@ def main(year):
     # ********************************************************************************
     #print("VAJAA LISTA")
     for row in speeches:
-        # sys.exit()
 
         csv_speech_id = row['speech_id']
         csv_session = row['session']
@@ -493,11 +523,8 @@ def main(year):
         firstname = row['given'].strip()
 
         lastname = row['family'].strip()
-        party = row['party'].strip()
         role = row['role'].strip()
         parl_role = row['parliamentary_role'].strip()
-        gender = row['gender']
-        birth = row['birth']
         speaker_URI = row['mp_uri'].strip()
         party_URI = row['party_uri'].strip()
         group_URI = row['group_uri']
@@ -520,16 +547,12 @@ def main(year):
 
         if 'page' in row:
             page = row['page']
-       # sys.exit()
+
         if 'status' in row:
             status = row['status']
             version = row['version']
             if version:
                 version = version.lstrip('versio')
-
-    # gathering language recognition issues
-       # if lang=='' or lang not in ['sv:fi', 'fi:sv', 'fi', 'sv']:
-        #    language_oddities.append([csv_speech_id, lang, content])
 
     # metadata from XML-source
         if 'speech_start' in row:
@@ -540,8 +563,10 @@ def main(year):
             if speech_version:
                 speech_version = speech_version.lstrip('versio')
 
+    # create URI
+        speech_URI = format_speech_URI(csv_speech_id)
         speech = URIRef(
-            'http://ldf.fi/semparl/speeches/s{}'.format(csv_speech_id))
+            'http://ldf.fi/semparl/speeches/s{}'.format(speech_URI))
 
     # speech order number, session, transcript info
         order = csv_speech_id.rpartition('_')[2]
@@ -550,8 +575,20 @@ def main(year):
         transcript = URIRef(
             'http://ldf.fi/semparl/documents/ptk_{}'.format(re.sub('/', '_', csv_session)))
 
-    # add speech and speaker info to graph
+    # add speech and speaker info to graph, select subcorpus class
         g.add((speech, RDF.type, semparls.Speech))
+
+        if int(year) < 1946:
+            g.add((speech, RDF.type, semparls.Subcorpus1))
+        elif int(year) < 1980:
+            g.add((speech, RDF.type, semparls.Subcorpus2))
+        elif int(year) < 2000:
+            g.add((speech, RDF.type, semparls.Subcorpus3))
+        elif int(year) < 2015:
+            g.add((speech, RDF.type, semparls.Subcorpus4))
+        else:
+            g.add((speech, RDF.type, semparls.Subcorpus5))
+
         if speaker_URI:
             g.add((speech, semparls.speaker, URIRef(speaker_URI)))
         if party_URI and party_URI != 'nan':
@@ -610,11 +647,14 @@ def main(year):
                 interrupter = check_interrupter(interruptions[i])
                 if interrupter:
                     g.add((interruption, semparls.interrupter, Literal(interrupter)))
-                    interrupter_URI = indentify_interrupter(
+                    interrupter_URI, interrupter_party_URI = identify_interrupter(
                         interrupter, date, year)
                     if interrupter_URI:
                         g.add((interruption, semparls.speaker,
                                URIRef(interrupter_URI)))
+                    if interrupter_party_URI:
+                        g.add((interruption, semparls.party,
+                               URIRef(interrupter_party_URI)))
                 # remove clearly marked interrupter from content
                     cleaned_content = re.sub(
                         '.+[;:] ?', '', interruptions[i], count=1)
@@ -623,6 +663,13 @@ def main(year):
                 else:
                     g.add((interruption, semparls.content,
                            Literal(interruptions[i])))
+
+                if 'uhemies' in interrupter or 'uhemies koputtaa' in interruptions[i]:
+                    g.add((interruption, semparls.chairmanInterruption,
+                           Literal("true", datatype=XSD.boolean)))
+                else:
+                    g.add((interruption, semparls.chairmanInterruption,
+                           Literal("false", datatype=XSD.boolean)))
 
     # Varying metadata if exists: page, speech-specific times, status, version
         if (page and '-1' not in page):
@@ -644,6 +691,9 @@ def main(year):
 
     # speech type, language
         if speech_type:
+            speech_type = speech_type.replace('Varsinainen ', '')
+            if speech_type[0].islower():
+                speech_type = speech_type.capitalize()
             speech_type_URI = URIRef(
                 'http://ldf.fi/semparl/speechtypes/{}'.format(re.sub(' ', '', speech_type)))
             g.add((speech, semparls.speechType, speech_type_URI))

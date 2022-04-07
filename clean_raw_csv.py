@@ -1,10 +1,8 @@
 import re
 import csv
 import sys
-import requests
-import json
-import time
 import pandas as pd
+import pycld2
 from pprint import pprint
 from speakerAnalyzer import *
 
@@ -47,6 +45,30 @@ def clean_date(date):
 
 def remove_hyphens(content):
     return content.replace('-<REMOVE> ', '',)
+
+
+def detect_language(text):
+    tags = []
+    try:
+        result = pycld2.detect(text)
+        for lang_tuple in result[2]:
+            if 'fi' in lang_tuple:
+                tags.append('fi')
+            elif 'sv' in lang_tuple:
+                tags.append('sv')
+    except:
+        pass
+
+    # typical short comments that do not get recognized
+    words = ['samoin', 'kannatan', 'kyllä', 'puhujalistaan', 'edustaja',
+             'ministeri', 'luovun', 'enemmistö', 'poistetaan', 'merkitään']
+    if not tags:
+        for word in words:
+            if word in text.lower():
+                tags.append('fi')
+                break
+
+    return ':'.join(tags)
 
 
 def clean_actor(actor, date):
@@ -446,21 +468,12 @@ with open(filename, newline='') as csvfile:
             if not speaker['role'] and re.compile('[EFB]d[\.,]').search(original_actor):
                 speaker['role'] = 'Kansanedustaja'
 
+    # check speech language
         lang = ''
-
         if content.startswith('(ruotsiksi)'):
             lang = 'sv'
         else:
-            try:
-                parameters = {'text': content}
-                results = requests.get(
-                    'http://demo.seco.tkk.fi/las/identify', params=parameters).json()
-                tags = []
-                tags = [k for d in results['details']
-                        ['languageDetectorResults'] for k in d.keys()]
-                lang = ':'.join(tags)
-            except:
-                lang = ''
+            lang = detect_language(content)
 
         if '10) Tuontiviikon järjestäminen Turussa siten kuin Turun metallityöväen ammattiosasto' in topic\
                 or '5) Sosiaali- ja terveysviranomaisten on huoleh' in topic:
@@ -500,7 +513,7 @@ with open(filename, newline='') as csvfile:
                 except:
                     pass
 
-            #print(last, speech_row[date_ix], uri, '\t-->', res)
+        #print(last, speech_row[date_ix], uri, '\t-->', res)
 
         cleaned_rows.append([speech_id, session, date, start.strip(), end, speaker['first'],
                              speaker['lastname'], speaker['role'], speaker['party'], topic, content, speaker['speechtype'], speaker['uri'], speaker['gender'], speaker['birth'], speaker['party_uri'], res, speaker['group'], row[8], lang, original_actor, row[7]])

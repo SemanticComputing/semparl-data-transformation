@@ -9,6 +9,8 @@ from pprint import pprint
 # Script for 1920-1939                      #
 # (1929 two Valtiopäiväs, PTK_1929_2-3=_II) #
 # (1930 two Valtiopäiväs, PTK_1930_2=_II)   #
+# (1932 two Valtiopäiväs, PTK_1932_4=_II)   #
+# (1935 two Valtiopäiväs, PTK_1935_5=_II)   #
 #############################################
 
 
@@ -102,7 +104,7 @@ def topic_enders(row, row2, row3):
             or row.startswith('Mainittu lakiehdotus')\
             or re.compile('[EFT]i?sitellään').match(row):
         return True
-    if 'Puhemiehen paikalle asetuttuaan' in row:
+    if 'Puhemiehen paikalle aset' in row:
         return True
     if re.compile('T?E?L?o(in|m)m?anpyyn(rt)?(nä?öt|tö)[\.,]?').match(row)\
             or row.startswith('Vapautusta eduskuntatyöstä saa'):  # 'Lomanpyynnöt:
@@ -189,9 +191,9 @@ def speech_starters(row, row2, row3):
 def document_start(row, year):
     # 5. Tiistaina 13 päivänä helmikuuta 1990
     if year > 1920:
-        if re.compile('\f*\(?[0-9]+[\.,\)] [A-Z][a-zåäö]+ [0-9]+ p[\-\.] .*kuuta 19[0123][0-9]').match(row):
+        if re.compile('\f*\(?[0-9]+[\.,\)] [A-Z][a-zåäö]+ [0-9]+ p[\-\.] .*kuuta 19[01234][0-9]').match(row):
             return True
-    else:  # ostly no year in the title
+    else:  # mostly no year in the title
         if re.compile('\f*\(?[0-9]+[\.,\)] [A-Z][a-zåäö]+ [0-9]+ p[\-\.] .*kuuta( 19[0123][0-9])?').match(row):
             return True
     return False
@@ -287,7 +289,7 @@ def index_end(row):
     if re.compile('Puhetta johtaa( ensimmäinen| toinen)? (puhemies|varapuhemies)').match(row):
         return True
     if 'Päiväjärjestyksessä olevat asiat:' in row or 'Päiväjärjestyksessä oleva asia:' in row\
-            or 'Ilmoitusasiat:' in row or 'Ikäpuhemiehen alkajaissanat' in row:
+            or 'Ilmoitusasiat:' in row or 'Ikäpuhemiehen alkajaissanat' in row or 'Päiväjärjestys.' in row:
         return True
     return False
 
@@ -360,7 +362,9 @@ def session_details(row, parliament_year, document_num):
         date = '{:s}-{:s}-{:s}'.format(parts[-1].strip('s'),
                                        parts[-2][:-2], parts[-4])
 
-    if (parliament_year in ['1918', '1929', '1930'] and int(document_num) > 1):
+    if (parliament_year in ['1918', '1929', '1930'] and int(document_num) > 1)\
+            or (parliament_year == '1932' and document_num == '4')\
+            or (parliament_year == '1935' and document_num == '5'):
         return session+'_II', parts[0][:-1], date
     return session, parts[0][:-1], date
 
@@ -372,6 +376,10 @@ def document_link(parliament_year, session_num, original_document_num):
         return 'https://s3-eu-west-1.amazonaws.com/eduskunta-asiakirja-original-documents-prod/suomi/1930/PTK_1930_II_vp.pdf'
     elif (parliament_year == '1928' and original_document_num == '2'):
         return 'https://s3-eu-west-1.amazonaws.com/eduskunta-asiakirja-original-documents-prod/suomi/1928/PTK_1928_I_II.pdf'
+    elif (parliament_year == '1932' and original_document_num == '4'):
+        return 'https://s3-eu-west-1.amazonaws.com/eduskunta-asiakirja-original-documents-prod/suomi/1932/ASK_PTK_1932_ylim_vp.pdf'
+    elif (parliament_year == '1935' and original_document_num == '5'):
+        return 'https://s3-eu-west-1.amazonaws.com/eduskunta-asiakirja-original-documents-prod/suomi/1935/ASK_PTK_ylim_vp_1935.pdf'
     else:
         romans = {'1': 'I', '2': 'II', '3': 'III',
                   '4': 'IV', '5': 'V', '6': 'VI'}

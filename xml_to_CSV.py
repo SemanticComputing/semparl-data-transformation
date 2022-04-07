@@ -5,6 +5,7 @@ import re
 import csv
 import requests
 import sys
+import pycld2
 from pprint import pprint
 
 
@@ -86,20 +87,28 @@ def sub_section_to_previous(previous_num, new_num):
     return False
 
 
-def find_language(content):
-    langs = ''
+def detect_language(text):
+    tags = []
     try:
-        parameters = {'text': content}
-        results = requests.get(
-            'http://demo.seco.tkk.fi/las/identify', params=parameters).json()
-        tags = []
-        tags = [k for d in results['details']
-                ['languageDetectorResults'] for k in d.keys()]
-        langs = ':'.join(tags)
+        result = pycld2.detect(text)
+        for lang_tuple in result[2]:
+            if 'fi' in lang_tuple:
+                tags.append('fi')
+            elif 'sv' in lang_tuple:
+                tags.append('sv')
     except:
-        langs = ''
+        pass
 
-    return langs
+    # typical short comments that do not get recognized
+    words = ['samoin', 'kannatan', 'kyllä', 'puhujalistaan', 'edustaja',
+             'ministeri', 'luovun', 'enemmistö', 'poistetaan', 'merkitään']
+    if not tags:
+        for word in words:
+            if word in text.lower():
+                tags.append('fi')
+                break
+
+    return ':'.join(tags)
 
 
 def main(year):
@@ -110,7 +119,8 @@ def main(year):
         '2018': 181,
         '2019': 87,
         '2020': 170,
-        '2021': 118  # Checked 18.10.2021
+        '2021': 167,
+        '2022': 33,
     }
     all_speeches = []
     #print('vajaa lista')
@@ -195,7 +205,7 @@ def main(year):
                         content = extract_cp_content(speech).strip()
 
                         # check language
-                        langs = find_language(content)
+                        langs = detect_language(content)
 
                         try:
                             all_speeches.append([speech_id, session, date, session_start, session_end,
@@ -252,7 +262,7 @@ def main(year):
                             details = ''
                             content = speech.find('sis:KappaleKooste').string
 
-                        langs = find_language(content)
+                        langs = detect_language(content)
 
         # A chairman comment trailing the speech. Add it as a separate speech (as it is shown as such in rendered view)
                         if content.endswith('>>'):
@@ -265,7 +275,7 @@ def main(year):
                             cm_content = parts[-1].partition('|')[
                                 2].strip('>>').strip()
 
-                            cm_lang = find_language(cm_content)
+                            cm_lang = detect_language(cm_content)
 
                             # Remove chairman trailing comment and other unneeded helper markings
                             content = parts[0].strip()

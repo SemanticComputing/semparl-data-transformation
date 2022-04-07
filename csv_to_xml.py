@@ -29,6 +29,7 @@ def is_interruption(m):
         '^Kon[ec]e?ään[\.,]? ?\d+',     # Votes
         'Lähde:', 'Källa:',
         '^Liite ',
+        '^Liitteet ',
         '^Pöytäkirjan liite',
         'vastalause$',
         'Tulkki esittää puheenvuorosta suomenkielisen yhteenvedon',
@@ -230,7 +231,7 @@ def find_party(first, last, date):
 
 def build_tree(speeches, year, member_info):
     root = Element(
-        'teiCorpus', {'xml:id': 'Speeches_{:s}'.format(year), 'xml:lang': 'eng'})
+        'teiCorpus', {'xml:id': 'Speeches_{:s}'.format(year), 'xml:lang': 'fi'})
     # xml:id should be equal to file name module extension(.xml)
 
     # Build teiHeader for the whole odcument
@@ -470,6 +471,16 @@ def build_tree(speeches, year, member_info):
             note.set('start', speech_start)
         if speech_end:
             note.set('end', speech_end)
+        if not lang:
+            note.set('xml:lang', '')
+            note.set('multilingual', '')
+        else:
+            tags = lang.split(':')
+            note.set('xml:lang', tags[0])
+            if len(tags) > 1:
+                note.set('multilingual', 'true')
+            else:
+                note.set('multilingual', 'false')
 
         if not 'uhemies' in role:
             content = content.replace(':|', ': ')

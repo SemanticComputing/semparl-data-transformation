@@ -1,8 +1,7 @@
 import sys
 import re
 import csv
-import json
-import requests
+import pycld2
 
 
 def session_number(string):
@@ -20,6 +19,30 @@ def fix_date(row):
 def fix_times(time):
     if ((len(time)) > 0 and '.' not in time):
         return time + '.00'
+
+
+def detect_language(text):
+    tags = []
+    try:
+        result = pycld2.detect(text)
+        for lang_tuple in result[2]:
+            if 'fi' in lang_tuple:
+                tags.append('fi')
+            elif 'sv' in lang_tuple:
+                tags.append('sv')
+    except:
+        pass
+
+    # typical short comments that do not get recognized
+    words = ['samoin', 'kannatan', 'kyllä', 'puhujalistaan', 'edustaja',
+             'ministeri', 'luovun', 'enemmistö', 'poistetaan', 'merkitään']
+    if not tags:
+        for word in words:
+            if word in text.lower():
+                tags.append('fi')
+                break
+
+    return ':'.join(tags)
 
 
 def main(year):
@@ -140,17 +163,8 @@ def main(year):
         row.insert(0, speech_order_num)
         i += 1
         # check language
-        try:
-            parameters = {'text': str(row[9])}
-            results = requests.get(
-                'http://demo.seco.tkk.fi/las/identify', params=parameters).json()
-            tags = []
-            tags = [k for d in results['details']
-                    ['languageDetectorResults'] for k in d.keys()]
-            l = len(row)
-            row.insert(14, ':'.join(tags))
-        except:
-            row.insert(14, '')
+        langs = detect_language(row[9])
+        row.insert(14, langs)
 
         if 'uhemies' in row[7]:
             row.insert(15, row[7] + ' ' + row[5] + ' ' + row[6])

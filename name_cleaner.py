@@ -165,12 +165,12 @@ def main(file_year):
 # create list of all possible lastnames for last option, "close option matching"
     all_lastnames = []
     for i, row in members.iterrows():
-        if row['family'] not in all_lastnames:
+        if row['family'] not in all_lastnames and type(row['family']) != float:
             all_lastnames.append(row['family'])
         if pd.notnull(row['other_family_names']):
             temp = row['other_family_names'].split('; ')
             for n in temp:
-                if n not in all_lastnames:
+                if n not in all_lastnames and type(n) != float:
                     all_lastnames.append(n)
 
     year_num = int(re.sub('_(XX|II)', '', file_year))
@@ -377,6 +377,7 @@ def main(file_year):
                     speaker = {}
 
                     match_options = []
+
                     match_options = difflib.get_close_matches(
                         last, all_lastnames)
 

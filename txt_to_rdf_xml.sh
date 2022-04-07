@@ -221,9 +221,3 @@ done
 mv *.xml results/
 mv *.ttl results/
 
-
-# #     # if [ ! -d "../data/1990-1999/$year/RAW" ] 
-# #     # then
-# #     #    mkdir ../data/1990-1999/$year/RAW
-# #     #    echo "Created directory '$year/RAW' for result files."
-# #     # fi

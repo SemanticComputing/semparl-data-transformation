@@ -174,6 +174,7 @@ def main(year):
                     except:
                         res = ''
                 speech_row.insert(16, res)
+                #print(last, speech_row[date_ix], uri, '\t-->', res)
 
         else:
             speech_row[12:12] = ['', '', '', '', '', '']
@@ -186,6 +187,7 @@ def main(year):
 
     headers[12:12] = ['mp_uri', 'gender',
                       'birth', 'party_uri', 'parliamentary_role', 'group_uri']
+    # pprint(party_roles)
 
     with open('speeches_{}.csv'.format(year), 'w', newline='') as save_to:
         writer = csv.writer(save_to, delimiter=',')
@@ -195,4 +197,6 @@ def main(year):
 
 if __name__ == "__main__":
     csv.field_size_limit(sys.maxsize)
+    #print(sp.find(date='1932-02-01', member='Q11858669'))
+    # sys.exit()
     main(sys.argv[1])
