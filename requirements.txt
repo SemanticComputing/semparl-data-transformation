@@ -1,4 +1,4 @@
-requests==2.18.4
+requests==2.27.1
 rdflib==5.0.0
 pandas==0.22.0
 pycld2==0.41
