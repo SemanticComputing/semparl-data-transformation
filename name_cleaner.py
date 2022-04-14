@@ -154,10 +154,10 @@ def main(file_year):
         reader = csv.reader(csvfile, delimiter=',')
         rows = list(reader)
 
-    if not is_in_docker:
-        with open('backups/speeches_{}_BAK2.csv'.format(file_year), 'w', newline='') as backup:
-            writer = csv.writer(backup, delimiter=',')
-            writer.writerows(rows)
+    # if not is_in_docker:
+    #     with open('backups/speeches_{}_BAK2.csv'.format(file_year), 'w', newline='') as backup:
+    #         writer = csv.writer(backup, delimiter=',')
+    #         writer.writerows(rows)
 
     members = pd.read_csv('parliamentMembers.csv', sep='\t')
 

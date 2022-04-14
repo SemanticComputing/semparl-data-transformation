@@ -35,10 +35,10 @@ is_in_docker = os.environ.get('RUNNING_IN_DOCKER_CONTAINER', False)
 with open('speeches_{}.csv'.format(year), newline='') as csvfile:
     reader = csv.reader(csvfile, delimiter=',')
     rows = list(reader)
-if not is_in_docker:
-    with open('backups/speeches_{}_BAK.csv'.format(year), 'w', newline='') as save_to:
-        writer = csv.writer(save_to, delimiter=',')
-        writer.writerows(rows)
+# if not is_in_docker:
+#     with open('backups/speeches_{}_BAK.csv'.format(year), 'w', newline='') as save_to:
+#         writer = csv.writer(save_to, delimiter=',')
+#         writer.writerows(rows)
 
 print(len(rows))
 print('>Rows attached to previous ones, fixing cases where one speech was erroneously split:\n***')
