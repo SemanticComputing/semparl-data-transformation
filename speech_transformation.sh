@@ -17,9 +17,9 @@ if [ $1 = "all" ]; then
     ./xml_to_rdf_xml.sh all
     echo -e "\nALL XML-BASED YEARS DONE\n"
 else
-    echo -e "\nSTARTING ON SPEECHES FROM 2021"
+    echo -e "\nSTARTING ON SPEECHES FROM CURRENT YEAR"
     ./xml_to_rdf_xml.sh update
-    echo -e "\nSPEECHES FROM 2021 DONE\n"
+    echo -e "\nSPEECHES FROM FROM CURRENT YEAR DONE\n"
 fi
 
 
