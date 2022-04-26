@@ -175,7 +175,7 @@ def speech_starters(row, row2):
     continuation = re.compile('^Puhuja ?[;:]')
     eldest = re.compile('-?Ikäpuhemie ?s( \(ruotsiksi\))?[;:]')
 
-    # the two first speeches if all time (don't get couaght otherwise)
+    # the two first speeches of all time (don't get caught otherwise)
     elder = re.compile(
         'Ikäpuhemies Hoikka lausui kokoontuneille edustaiille :')
     vuolijoki = re.compile(
