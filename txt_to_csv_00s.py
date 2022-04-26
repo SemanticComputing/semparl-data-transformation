@@ -89,7 +89,8 @@ def topic_starter(row, prev_row):
             or 'Puhemiehen puhe.' == row or 'Puhemiehen tervehdyspuhe.' == row\
             or 'Vaitiepäivien avaaminen.' == row\
             or suggestion.match(row)\
-            or 'Muutos päiväjärjestykseen.' in row:
+            or 'Muutos päiväjärjestykseen.' in row\
+            or row == 'Puhemiehen ja varapuhemiesten vaali.':
         return True
     return False
 
@@ -112,7 +113,8 @@ def topic_enders(row, row2):
             or ' Kun täysi-istuntoa jälleen jatketaan' in row\
             or 'Jatketaan viime täysi-istunnossa ' in row\
             or 'Puhemiehen poistuttua ja ' in row\
-            or row == 'Ikäpuhemiehen jälkeen asettui paikalleen Puhemies ja':
+            or row == 'Ikäpuhemiehen jälkeen asettui paikalleen Puhemies ja'\
+            or row == 'Ikäpuhemies kehoitti Eduskuntaa V. J:n 23 8:n mukai-':
         return True
     if speech_starters(row, row2):
         return True
@@ -173,6 +175,12 @@ def speech_starters(row, row2):
     continuation = re.compile('^Puhuja ?[;:]')
     eldest = re.compile('-?Ikäpuhemie ?s( \(ruotsiksi\))?[;:]')
 
+    # the two first speeches if all time (don't get couaght otherwise)
+    elder = re.compile(
+        'Ikäpuhemies Hoikka lausui kokoontuneille edustaiille :')
+    vuolijoki = re.compile(
+        'Edustaja Vuolijoki, Väinö: Valtiopäiväjärjestyksen 67')
+
     if re.search(re.compile('y[\.,] ?m[\.,] '), row) or 'ilmoitetaan sairaaksi' in row:
         return False
 
@@ -180,7 +188,7 @@ def speech_starters(row, row2):
             or chairman.match(row) or continuation.match(row)\
             or (chairman_knock.match(row) and chairman_knock2.match(row2))\
             or (long_title.match(row) and long_title2.match(row2))\
-            or eldest.match(row):
+            or eldest.match(row) or elder.match(row) or vuolijoki.match(row):
         return True
     return False
 
@@ -328,6 +336,7 @@ def acceptance(row):
             or 'Puhemiehen mainitsema asiakirja luetaan' in row\
             or 'Puhemies ilmoitti vielä olevan kahdeksan puheenvuoroa' in row\
             or 'Sihteeri lukee' in row or 'Äänestysesitys ja päätös:' in row\
+            or row == 'Sen jälkeen toimitetussa vaalissa Kansaneduskunnan'\
             or row == 'Ed.':
         return True
     return False
@@ -773,6 +782,13 @@ def main(filename):
     with open('{:s}_RAW.csv'.format(output_file), 'w', newline='') as save_to:
         writer = csv.writer(save_to, delimiter=',')
         for i in range(len(all_speeches)):
+
+            # taking care of the first two ever speeches that were problematic
+            if i == 0 and all_speeches[i][2].startswith('Ikäpuhemies Hoikka lausui kokoontuneille edustaiille'):
+                all_speeches[i][2] = 'Ikäpuhemies Hoikka'
+            if i == 1 and all_speeches[i][2].startswith('Edustaja Vuolijoki, Väinö'):
+                all_speeches[i][2] = 'Ed. Vuolijoki, Väinö'
+
             if 'end' in session_times[all_speeches[i][0]]:
                 end = session_times[all_speeches[i][0]]['end']
             else:
