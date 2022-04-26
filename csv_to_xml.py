@@ -1,4 +1,3 @@
-from ast import Sub
 import csv
 import sys
 import time
@@ -317,7 +316,7 @@ def build_tree(speeches, year, member_info):
     #######################
     # Go through speeches #
     #######################
-    for row in speeches[1:500]:
+    for row in speeches[1:]:
         speech_id = row[speech_id_ix]
         document = row[session_ix]
         date = row[date_ix]
