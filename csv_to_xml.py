@@ -1,3 +1,4 @@
+from ast import Sub
 import csv
 import sys
 import time
@@ -316,7 +317,7 @@ def build_tree(speeches, year, member_info):
     #######################
     # Go through speeches #
     #######################
-    for row in speeches[1:]:
+    for row in speeches[1:500]:
         speech_id = row[speech_id_ix]
         document = row[session_ix]
         date = row[date_ix]
@@ -336,6 +337,7 @@ def build_tree(speeches, year, member_info):
         speech_type = row[type_ix]
 
         link = row[link_ix]
+        session_number = document.partition('/')[0]
 
         status, version = '', ''
         speech_start, speech_end, page = '', '', ''
@@ -391,6 +393,20 @@ def build_tree(speeches, year, member_info):
                 'when': date})
             date_tag.text = date
             time = SubElement(setting, 'time', {'from': start, 'to': end})
+
+            if (int(year) > 2008) or (year == '2008' and int(session_number) > 70):
+                recordingUrl = 'https://verkkolahetys.eduskunta.fi/fi/taysistunnot/taysistunto-{}-{}'.format(
+                    session_number, year)
+                recordingStmt = SubElement(tei_fileDesc, 'recordingStmt')
+                recording = SubElement(
+                    recordingStmt, 'recording', {'type': 'video'})
+                media = SubElement(recording, 'media', {
+                                   'mimeType': 'mp4', 'url': recordingUrl})
+                video_resp = SubElement(recording, 'respStmt')
+                resp = SubElement(video_resp, 'resp')
+                resp.text = 'Video recording'
+                resp_name = SubElement(video_resp, 'name')
+                resp_name.text = 'Eduskunta (Parliament of Finland)'
 
             # Build body = all of the sessions's actual speeches
             text = SubElement(tei, 'text')
