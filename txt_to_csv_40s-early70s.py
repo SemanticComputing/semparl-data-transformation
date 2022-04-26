@@ -280,7 +280,9 @@ def handle_session_end(row, row2):
 
 
 def document_link(parliament_year, session_num, original_document_num):
-    if int(parliament_year) == 1975:
+    if parliament_year == '1958':
+        return 'https://s3-eu-west-1.amazonaws.com/eduskunta-asiakirja-original-documents-prod/suomi/1958/PTK_1958.pdf'
+    elif int(parliament_year) == 1975:
         return 'https://s3-eu-west-1.amazonaws.com/eduskunta-asiakirja-original-documents-prod/suomi/1975/PTK_1975_I_{}.pdf'.format(
             original_document_num
         )

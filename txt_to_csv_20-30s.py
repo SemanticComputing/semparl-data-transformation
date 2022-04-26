@@ -370,7 +370,11 @@ def session_details(row, parliament_year, document_num):
 
 
 def document_link(parliament_year, session_num, original_document_num):
-    if (parliament_year in ['1929', '1930'] and original_document_num == '1'):
+    if (parliament_year == '1920'):
+        return 'https://s3-eu-west-1.amazonaws.com/eduskunta-asiakirja-original-documents-prod/suomi/{0}/PTK_{0}_{1}.pdf'.format(
+            parliament_year, original_document_num
+        )
+    elif (parliament_year in ['1929', '1930'] and original_document_num == '1'):
         return 'https://s3-eu-west-1.amazonaws.com/eduskunta-asiakirja-original-documents-prod/suomi/{0}/PTK_{0}.pdf'.format(parliament_year)
     elif (int(parliament_year) == 1930 and int(original_document_num) == 2):
         return 'https://s3-eu-west-1.amazonaws.com/eduskunta-asiakirja-original-documents-prod/suomi/1930/PTK_1930_II_vp.pdf'
@@ -380,12 +384,15 @@ def document_link(parliament_year, session_num, original_document_num):
         return 'https://s3-eu-west-1.amazonaws.com/eduskunta-asiakirja-original-documents-prod/suomi/1932/ASK_PTK_1932_ylim_vp.pdf'
     elif (parliament_year == '1935' and original_document_num == '5'):
         return 'https://s3-eu-west-1.amazonaws.com/eduskunta-asiakirja-original-documents-prod/suomi/1935/ASK_PTK_ylim_vp_1935.pdf'
+    elif (parliament_year == '1939'):
+        return 'https://s3-eu-west-1.amazonaws.com/eduskunta-asiakirja-original-documents-prod/suomi/1939/PTK_1939.pdf'
     else:
         romans = {'1': 'I', '2': 'II', '3': 'III',
                   '4': 'IV', '5': 'V', '6': 'VI'}
         if parliament_year == '1929':
-            return 'https://s3-eu-west-1.amazonaws.com/eduskunta-asiakirja-original-documents-prod/suomi/1929/PTK_1929_II_{}.pdf'.format(
-                romans[original_document_num]
+            n = str(int(original_document_num) - 1)
+            return 'https://s3-eu-west-1.amazonaws.com/eduskunta-asiakirja-original-documents-prod/suomi/1929/PTK_1929_II_vp_{}.pdf'.format(
+                romans[n]
             )
         return 'https://s3-eu-west-1.amazonaws.com/eduskunta-asiakirja-original-documents-prod/suomi/{}/PTK_{}_{}.pdf'.format(
             parliament_year, parliament_year, romans[original_document_num]
