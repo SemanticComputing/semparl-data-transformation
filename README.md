@@ -209,7 +209,7 @@ Both XML and RDF version are created from the CSV.
 
  &nbsp;
 
- ## Redo only RDF and/XML
+ ## Redo only RDF and/or XML
  ___
  &nbsp;
 If you find yourself wanting to only tweak the RDF and XML formats, it might be more convenient to use the
