@@ -120,11 +120,17 @@ def main(year):
         '2019': 87,
         '2020': 170,
         '2021': 167,
-        '2022': 33,
+        # '2022': 51,
     }
     all_speeches = []
     #print('vajaa lista')
-    for i in range(1, session_count[year]+1):
+    end_limit = 500
+    if year in session_count:
+        end_limit = session_count[year] + 1
+
+    empty_responses = 0
+
+    for i in range(1, end_limit):
         # download minutes for one session
         id_doc = 'PTK {:d}/{} vp'.format(i, year)
         parameters = {'perPage': 10, 'page': 0,
@@ -133,6 +139,11 @@ def main(year):
             'https://avoindata.eduskunta.fi/api/v1/tables/VaskiData/rows', params=parameters)
         json_data = json.loads(response.content)
         rows = json_data['rowData']
+
+        if len(rows) == 0:
+            empty_responses += 1
+        if empty_responses > 9:
+            break
 
         for row in rows:
             soup = BeautifulSoup(row[1], "xml")

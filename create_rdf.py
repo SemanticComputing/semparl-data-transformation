@@ -822,7 +822,7 @@ def main(year):
             sg.add((session, semparls.orderNumber, Literal(
                 plenary_session, datatype=XSD.integer)))
 
-            if (int(year) > 2008) or (year == 2008 and int(plenary_session > 70)):
+            if (int(year) > 2008) or (year == '2008' and int(plenary_session) > 70):
                 recording_url = 'https://verkkolahetys.eduskunta.fi/fi/taysistunnot/taysistunto-{}-{}'.format(
                     plenary_session, year)
                 sg.add((session, semparls.recording, URIRef(recording_url)))

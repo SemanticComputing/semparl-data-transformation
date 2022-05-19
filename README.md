@@ -11,7 +11,8 @@ Tools for gathering and formatting data for the Semantic Parliament dataservice 
     1. [Preparation](#preparation)
     2. [Short version: Use Docker](#short-version-use-docker)
     3. [Long version: How it works under the hood](#long-version-how-it-works-under-the-hood)
-    4. [Government proposals](#government-proposals)
+    4. [Redo only RDF and/XML](#redo-only-rdf-andxml)
+    5. [Government proposals](#government-proposals)
 3. [Maintenance](#maintenance)
 
 ---
@@ -27,6 +28,7 @@ Tools for gathering and formatting data for the Semantic Parliament dataservice 
 The whole pipeline produces four files for each parliamentary session;
 - The Parla-CLARIN version is in its entarity in file ```Speeches_<year>.xml``` 
 - The RDF version is spread into three files: ```speeches_<year>.ttl, items_and_documents_<year>.ttl```  and ``` sessions_and_transcripts_<year>.ttl```. 
+- (Also various mid-way CSV and txt files)
 
 &nbsp;
  # Data production
@@ -107,27 +109,27 @@ and attemps to fix several problems, such as distorted speaker names and split s
 
 To form a CSV file for one parliamentary session: 
 - First gather raw data from the individual files that together form one parliamentary session (with suitale script starting with 'txt_to_csv_'), e.g.:
-    -  ```python txt_to_csv_20-30s.py path/to/txt_file``` --> produces e.g. ```PTK_1927_1_RAW.csv```
+    -  ```python3 txt_to_csv_20-30s.py path/to/txt_file``` --> produces e.g. ```PTK_1927_1_RAW.csv```
 - Combine the individual raw data files to one file, e.g.:
     - ```cat path/to/raw_files/*.csv > desired_path/speeches_1927_RAW.csv```
 - Clean and enrich data (most notably: speaker info):
-    - ```python clean_raw_csv.py path/to/combined_file``` --> produces e.g. ```speeches_1927.csv```
+    - ```python3 clean_raw_csv.py path/to/combined_file``` --> produces e.g. ```speeches_1927.csv```
 - More cleaning operations (especially split speeches and known name issues):
-    - ```python final_csv_cleaner.py <year>``` --> rewrites ```speeches_<year>.csv```
+    - ```python3 final_csv_cleaner.py <year>``` --> rewrites ```speeches_<year>.csv```
 - Last effort fo fix speaker name and recognition issues:
-    - ```python name_cleaner.py <year>``` --> rewrites ```speeches_<year>.csv```    
+    - ```python3 name_cleaner.py <year>``` --> rewrites ```speeches_<year>.csv```    
 
 
 **Step 2: Create XML and RDF from CSV**
 
 Both XML and RDF version are created from the cleaned up CSV. Run:
-- ```python csv_to_xml.py <year>``` --> produces ```Speeches_<year>.xml```
-- ```python create_rdf.py <year>``` --> produces ```speeches_<year>.ttl, items_and_documents_<year>.ttl```  and ``` sessions_and_transcripts_<year>.ttl``` 
+- ```python3 csv_to_xml.py <year>``` --> produces ```Speeches_<year>.xml```
+- ```python3 create_rdf.py <year>``` --> produces ```speeches_<year>.ttl, items_and_documents_<year>.ttl```  and ``` sessions_and_transcripts_<year>.ttl``` 
 
 *Special case: year 1999:*
 
 Parliamentary session 1999's plenary sessions are available in HTML from 86/1999 onwards. For best results first half of 1999 is created from ocr'ed data and  the rest from html. These halfs are combined before creating final XML and RDF files. To do this first create cleaned CSV for start of 1999 as described above and another csv for the last half of 1999 as described below. Name these files   ```speeches_1999_a.csv``` and  ```speeches_1999_b.csv``` appropriately and run:
-```python combine_1999.py```. After this you can create XML and RDF normally from the produced combined CSV-file.
+```python3 combine_1999.py```. After this you can create XML and RDF normally from the produced combined CSV-file.
 
 
 &nbsp;
@@ -157,19 +159,19 @@ such as time details. These files are then combined to form a singular CSV-file 
 
 To perform this process run:
 - Gather data from discussion pages:
-    - ```python html_to_csv.py path/to/discussions_<year>.html``` --> produces ```discussions_<year>.csv```
+    - ```python3 html_to_csv.py path/to/discussions_<year>.html``` --> produces ```discussions_<year>.csv```
 - Gather data from main pages:  
-    - ```python main_pages_to_csv.py path/to/main_pages_<year>.html``` --> produces ```main_page_speeches_<year>.csv, skt_times_<year>.csv, related_document_details_<year>.csv```. The last two documents store details that help combining the two speech files and in later metadata forming.
+    - ```python3 main_pages_to_csv.py path/to/main_pages_<year>.html``` --> produces ```main_page_speeches_<year>.csv, skt_times_<year>.csv, related_document_details_<year>.csv```. The last two documents store details that help combining the two speech files and in later metadata forming.
 - Enrich speaker infromation:
-    - ```python enrich_member_info.py <year>```  --> rewrites ```speeches_<year>.csv```
+    - ```python3 enrich_member_info.py <year>```  --> rewrites ```speeches_<year>.csv```
     
 
 
 **Step 2: Create XML and RDF from CSV**
 
 Both XML and RDF version are created from the combined CSV.
-- ```python csv_to_xml.py <year>``` --> produces ```Speeches_<year>.xml```
-- ```python create_rdf.py <year>``` --> produces ```speeches_<year>.ttl, items_and_documents_<year>.ttl```  and ``` sessions_and_transcripts_<year>.ttl``` 
+- ```python3 csv_to_xml.py <year>``` --> produces ```Speeches_<year>.xml```
+- ```python3 create_rdf.py <year>``` --> produces ```speeches_<year>.ttl, items_and_documents_<year>.ttl```  and ``` sessions_and_transcripts_<year>.ttl``` 
 
  &nbsp;
 
@@ -186,33 +188,43 @@ ___
 The XML source data is quick to retrieve so it is gathered in the transformation process by the way of requests to Avoin eduskunta API. The API returns each plenary session in separate JSON-wrapped XML. The speeches are gathered to CSV-files, one parliamentary session per file, one speech per row. Speaker information is further enriched after this step.
 
 - Gather data:
-    - ```python xml_to_CSV.py <year>``` --> produces ```speeches_<year>.csv```
+    - ```python3 xml_to_CSV.py <year>``` --> produces ```speeches_<year>.csv```
 - Enrich speaker infromation:
-   - ```python enrich_member_info.py <year>```  --> rewrites ```speeches_<year>.csv```
+   - ```python3 enrich_member_info.py <year>```  --> rewrites ```speeches_<year>.csv```
 
 **Step 2: Create XML and RDF from CSV**
 
 Both XML and RDF version are created from the CSV.
 
-- ```python csv_to_xml.py <year>``` --> produces ```Speeches_<year>.xml```
-- ```python create_rdf.py <year>``` --> produces ```speeches_<year>.ttl, items_and_documents_<year>.ttl```  and ``` sessions_and_transcripts_<year>.ttl``` 
+- ```python3 csv_to_xml.py <year>``` --> produces ```Speeches_<year>.xml```
+- ```python3 create_rdf.py <year>``` --> produces ```speeches_<year>.ttl, items_and_documents_<year>.ttl```  and ``` sessions_and_transcripts_<year>.ttl``` 
 
 &nbsp;
 
- ## Manually update the newest year with new plenary sessions
- 
- Update the amount of held sessions for the current year in dict ```session_count``` in ```xml_to_CSV.py```
+ ## Manually update the current year with new plenary sessions
+ ___
+ &nbsp;
 
  Run ```./xml_to_rdf_xml.sh update```, it repeates the steps described above for the current parliamentary year.
 
  &nbsp;
 
+ ## Redo only RDF and/XML
+ ___
+ &nbsp;
+If you find yourself wanting to only tweak the RDF and XML formats, it might be more convenient to use the
+ready-made CSV-files in the [source backup repo](https://version.aalto.fi/gitlab/seco/semparl-speeches-source-backups). Folder ```mid-way-files``` contains all the (already enriched) data in
+ previously mentiond ```speeches_<year>.csv``` files plus some additional required text files (HTML-period). You can shortcut by using these files. Running  ```python3 csv_to_xml.py <year>``` and/or ```python3 create_rdf.py <year>```
+with that year's files present in the root produces the final data files.
+Using the readymade CSV's is notably quicker than redoing the whole process.
 
-# Government proposals
+ &nbsp;
 
+## Government proposals
+___
 Government proposals can be gathered and transformed to RDF with
    
-    ```python other_tools/transform_gov_proposals.py```
+    ```python3 other_tools/transform_gov_proposals.py```
 
 This process can be run by using a presearched list of government ids and retrieving the documents based on that or by researching the ids and then doing the the rest of the transformation process. Choose the option by commenting out the appropriate rows (see code).
 
@@ -229,5 +241,5 @@ This process can be run by using a presearched list of government ids and retrie
 - In ```xml_to_rdf_xml.sh``` 
     - expand the for-loop's year limit to cover the new session
     - change the variable ```year``` in the ```else```-condition to the current year
-- In ```xml_to_CSV.py``` (This step will hopefully be made unnecessary)
-    - in dictionary ```session count``` add new key-value pair for the current year 
+- [Optional] In ```xml_to_CSV.py```
+    - in dictionary ```session_count``` you can add a new key-value pair for the previous year. The value is the amount of sessions there were for the year. If such value exists, the script knows to stop quering documents after the last session (instead of after a set amount of queries that return nothing). Similar key-value can be set for current year as well, but the user needs to remember to update this value everytime they wish to update the current year.

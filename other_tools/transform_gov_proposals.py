@@ -5,15 +5,11 @@ import sys
 import requests
 from bs4 import BeautifulSoup
 from urllib import request
-import lxml
 import json
 import datetime
-import time
-from pprint import pprint
 
 
 def find_proposal_ids():
-    bills = []
     bill_ids = []
     page = 0
     has_more = True
@@ -36,19 +32,21 @@ def find_proposal_ids():
 
         has_more = json_data['hasMore']
         page += 1
-        print('len:', len(bill_ids))
 
     return list(set(bill_ids))
 
 
 def main():
     # A) use premaid list of ids (quicker, but might not be up-to-date)
-    with open('gov_prop_ids.txt', newline='') as f:
-        reader = f.readlines()
-        ids = list(reader)
+    # with open('gov_prop_ids.txt', newline='') as f:
+    #     reader = f.readlines()
+    #     ids = list(reader)
 
-    # B) Research ids first:
-    #ids = find_proposal_ids()
+    # B) Retrieve ids first:
+    ids = find_proposal_ids()
+    with open('gov_prop_ids.txt', 'w') as idfile:
+        idfile.write('\n'.join(ids))
+    print('ids retrieved')
 
     g = Graph()
     semparls = Namespace('http://ldf.fi/schema/semparl/')
@@ -56,7 +54,6 @@ def main():
     g.bind('skos', SKOS)
     g.bind("dct", DCTERMS)
 
-    # with open('output.xml', 'w', newline='') as file:
     for i in ids:
         # retrieve government proposal
         parameters = {'perPage': 100, 'page': 0,
@@ -66,9 +63,6 @@ def main():
         json_data = json.loads(response.content)
         proposal = BeautifulSoup(json_data['rowData'][0][1], "xml")
 
-        # file.write(str(proposal.prettify()))
-        # file.write('\nEND**********************************************\n')
-        # continue
         try:
             prop_id = proposal.find_all(
                 ['met1:EduskuntaTunnus', 'ns:EduskuntaTunnus', 'ns:ViiteTeksti', 'sis1:ViiteTeksti'])
