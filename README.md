@@ -243,3 +243,6 @@ This process can be run by using a presearched list of government ids and retrie
     - change the variable ```year``` in the ```else```-condition to the current year
 - [Optional] In ```xml_to_CSV.py```
     - in dictionary ```session_count``` you can add a new key-value pair for the previous year. The value is the amount of sessions there were for the year. If such value exists, the script knows to stop quering documents after the last session (instead of after a set amount of queries that return nothing). Similar key-value can be set for current year as well, but the user needs to remember to update this value everytime they wish to update the current year.
+
+
+Additionally, as all speaker details are fetched from file ```parliamentMembers.csv```, this file needs to be updated whenever there is changes or additions to parliament members or their information. 
