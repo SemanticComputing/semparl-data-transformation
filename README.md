@@ -162,6 +162,8 @@ To perform this process run:
     - ```python3 html_to_csv.py path/to/discussions_<year>.html``` --> produces ```discussions_<year>.csv```
 - Gather data from main pages:  
     - ```python3 main_pages_to_csv.py path/to/main_pages_<year>.html``` --> produces ```main_page_speeches_<year>.csv, skt_times_<year>.csv, related_document_details_<year>.csv```. The last two documents store details that help combining the two speech files and in later metadata forming.
+- Combine and sort speeches from discussion and main page files into one CSV:
+    - ```python3 combine_speeches.py <year>``` --> produces ```speeches_<year>.csv```
 - Enrich speaker infromation:
     - ```python3 enrich_member_info.py <year>```  --> rewrites ```speeches_<year>.csv```
     
