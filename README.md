@@ -38,7 +38,7 @@ The whole pipeline produces four files for each parliamentary session;
 &nbsp;
  ## Preparation
 
- Whether you use Docker or perform the tasks manually, if you wish to run the whole transformation process, you need the source materials from [here](https://version.aalto.fi/gitlab/seco/semparl-speeches-source-backups) (access restricted).
+ Whether you use Docker or perform the tasks manually, if you wish to run the whole transformation process, you need the source materials from [here](https://version.aalto.fi/gitlab/seco/semparl-speeches-source-backups).
 - Copy the folders ```fixed_title_txt-files``` and ```original_html``` to this root folder. Don't
 change the names or structure of these folders. (to make things easier you might want to first delete the identical example folders in this repository)
 
@@ -144,7 +144,7 @@ ____
 **Step 0: Produce the HTML data**
 
 Data is spread on individual plenary session's main page and separate discussion pages, one topic per discussion page.
-The HTML data can be scraped from eduskunta.fi web pages or the already gathered and pruned data from [here](https://version.aalto.fi/gitlab/seco/semparl-speeches-source-backups) (access restricted) can be used. This data was downloaded in May/June 2020 and pruned of unneeded source code (footers, nav bars., etc.). The scripts full functionality can be guaranteed only for that version of the data. In either case it is recommended to download the readied data to ensure ease of reuse as the downloading process from eduskunta.fi was very slow and there has been later changes to the html (different tags, etc.).
+The HTML data can be scraped from eduskunta.fi web pages or the already gathered and pruned data from [here](https://version.aalto.fi/gitlab/seco/semparl-speeches-source-backups) can be used. This data was downloaded in May/June 2020 and pruned of unneeded source code (footers, nav bars., etc.). The scripts full functionality can be guaranteed only for that version of the data. In either case it is recommended to download the readied data to ensure ease of reuse as the downloading process from eduskunta.fi was very slow and there has been later changes to the html (different tags, etc.).
 
 To scrape the data:
 
