@@ -42,11 +42,6 @@ The whole pipeline produces four files for each parliamentary session;
 - Copy the folders ```fixed_title_txt-files``` and ```original_html``` to this root folder. Don't
 change the names or structure of these folders. (to make things easier you might want to first delete the identical example folders in this repository)
 
-- Speaker information enrichment step uses SPARQL queries. For that you need to create file ```authorization.py``` to the root folder. File should contain row
-
-    ```AUTHORIZATION_HEADER: = {'Authorization':"<password here>"}```
-
-
 &nbsp;
 
  # Short version: Use DOCKER
