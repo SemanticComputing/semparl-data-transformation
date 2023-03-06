@@ -1,5 +1,5 @@
 '''
-Created on 21 Sep 2021
+Created on 21 Sep 2021, modified 6 March 2023
 @author: ptleskin
 '''
 from collections import defaultdict
@@ -9,9 +9,6 @@ import rdflib as rdflib
 from rdflib.namespace import XSD, Namespace
 import re
 from SPARQLWrapper import SPARQLWrapper, JSON, POST
-
-from authorization import AUTHORIZATION_HEADER
-
 
 class SpeakerAnalyzer:
     """Example of usage:
@@ -50,25 +47,24 @@ class SpeakerAnalyzer:
 
     def __init__(self):
         """Init the module by querying the sparql endpoint."""
-        self.party_data = self.queryPartyInfo(
-            query=self.PREFIXES + self.PARTY_QUERY)
-        self.government_data = self.queryGovernmentInfo(
-            query=self.PREFIXES+self.GOVERNMENT_QUERY)
+        self.party_data = self.queryPartyInfo(query = self.PREFIXES + self.PARTY_QUERY)
+        self.government_data = self.queryGovernmentInfo(query=self.PREFIXES+self.GOVERNMENT_QUERY)
 
         self.membership_data = {
-            **self.queryMemberships(query=self.PREFIXES+self.MEMBERSHIP_QUERY),
+            **self.queryMemberships(query=self.PREFIXES+self.MEMBERSHIP_QUERY), 
             **self.queryMemberships(query=self.PREFIXES+self.MINISTRY_QUERY),
             **self.queryMemberships(query=self.PREFIXES+self.COUNCELLOR_QUERY)}
+    
 
     def simplify_label(self, st):
         return re.sub(r'^.+[/]([^/]+)$', r'\1', st)
-
+    
     DATATYPECONVERTERS = {
-        str(XSD.integer):  int,
-        str(XSD.decimal):  float,
-        str(XSD.date): lambda v: datetime.strptime(v, '%Y-%m-%d').date(),
-        str(XSD.dateTime): lambda v: datetime.strptime(v, '%Y-%m-%dT%H:%M:%S').date()
-    }
+            str(XSD.integer):  int,
+            str(XSD.decimal):  float,
+            str(XSD.date):     lambda v: datetime.strptime(v, '%Y-%m-%d').date(),
+            str(XSD.dateTime): lambda v: datetime.strptime(v, '%Y-%m-%dT%H:%M:%S').date()
+        }
 
     PEOPLE = Namespace('http://ldf.fi/semparl/people/')
     CARETAKER_GOVERNMENT = "Virkamieshallitus"
@@ -78,10 +74,8 @@ class SpeakerAnalyzer:
     def queryPartyInfo(self, query):
         sparql = SPARQLWrapper("https://ldf.fi/semparl/sparql")
         sparql.setQuery(query)
-
+            
         sparql.setReturnFormat(JSON)
-        sparql.addCustomHttpHeader(
-            "Authorization", AUTHORIZATION_HEADER.get('Authorization'))
         results = sparql.query().convert()
         res = self.convertDatatypes(results)
 
@@ -90,17 +84,15 @@ class SpeakerAnalyzer:
             party, label = ob.get('id'), ob.get('label')
             if party and label:
                 party_data[party] = label
-
+    
         return party_data
 
+    
     def queryGovernmentInfo(self, query):
         sparql = SPARQLWrapper("https://ldf.fi/semparl/sparql")
-        # https://api.triplydb.com/s/pS-okcwli
         sparql.setQuery(query)
-
+            
         sparql.setReturnFormat(JSON)
-        sparql.addCustomHttpHeader(
-            "Authorization", AUTHORIZATION_HEADER.get('Authorization'))
         results = sparql.query().convert()
         res = self.convertDatatypes(results)
 
@@ -108,11 +100,11 @@ class SpeakerAnalyzer:
 
         for ob in res:
             url = ob.get('id')
-
+            
             v = ob.get('label')
             if v:
                 government_data[url]['label'] = v
-
+            
             v = ob.get('start')
             if v:
                 government_data[url]['start'] = v
@@ -124,10 +116,9 @@ class SpeakerAnalyzer:
             if party:
                 if not 'parties' in government_data[url]:
                     government_data[url]['parties'] = defaultdict(dict)
-                government_data[url]['parties'][party] = self.party_data.get(
-                    party)
-
-        return government_data
+                government_data[url]['parties'][party] = self.party_data.get(party)
+        
+        return government_data 
 
     @lru_cache(maxsize=256, typed=False)
     def find(self, date, member):
@@ -138,11 +129,12 @@ class SpeakerAnalyzer:
         else:
             _date = date
 
+
         st = self.simplify_label(member)
         arr = self.membership_data.get(st)
         if arr:
             for ob in arr:
-                if ob.get('start') <= _date and _date <= ob.get('end'):
+                if ob.get('start')<=_date and _date<= ob.get('end'):
                     party = ob.get('party')
                     comment = ob.get('comment')
 
@@ -153,38 +145,35 @@ class SpeakerAnalyzer:
 
                     url, ob = self.findGovernment(_date)
                     parties = ob.get('parties', [])
-
+                    
                     if url is None:
                         res['error'] = 'Ei hallitusta tänä aikana'
-                    elif len(parties) == 0:
+                    elif len(parties)==0:
                         res['type'] = self.CARETAKER_GOVERNMENT
                     elif party in parties:
                         res['type'] = self.GOVERNMENTAL_PARTY
-                    else:
+                    else: 
                         res['type'] = self.OPPOSITION_PARTY
-
+                    
                     if self.party_data.get(party):
                         res['party_label'] = self.party_data.get(party)
-
+                    
                     return res
-
+            
             return dict(error='Henkilöltä ei löydy jäsenyyttä valittuun aikaan')
         else:
             return dict(error='Tuntematon henkilö')
-
+    
     @lru_cache(maxsize=256, typed=False)
     def findGovernment(self, date):
-        res = [(url, ob) for url, ob in self.government_data.items()
-               if ob.get('start') <= date and date <= ob.get('end')]
+        res = [(url, ob) for url, ob in self.government_data.items() if ob.get('start')<=date and date<=ob.get('end')]
         return res[0] if len(res) else (None, dict(label='no government'))
-
+    
     def queryMemberships(self, query):
         sparql = SPARQLWrapper("https://ldf.fi/semparl/sparql")
         sparql.setQuery(query)
-
+            
         sparql.setReturnFormat(JSON)
-        sparql.addCustomHttpHeader(
-            'Authorization', AUTHORIZATION_HEADER.get('Authorization'))
 
         results = sparql.query().convert()
         res = self.convertDatatypes(results)
@@ -197,14 +186,14 @@ class SpeakerAnalyzer:
             membership_data[url].append(ob)
 
         return membership_data
-
+    
     def convertDatatype(self, obj):
-        return self.DATATYPECONVERTERS.get(obj.get('datatype'), str)(obj.get('value'))
+        return self.DATATYPECONVERTERS.get(obj.get('datatype'), str)(obj.get('value')) 
 
     def convertDatatypes(self, results):
         res = results["results"]["bindings"]
-        return [dict([(k, self.convertDatatype(v)) for k, v in r.items()]) for r in res]
-
+        return [dict([(k, self.convertDatatype(v)) for k,v in r.items()]) for r in res]
+    
     PREFIXES = """
         PREFIX bioc: <http://ldf.fi/schema/bioc/>
         PREFIX committees: <http://ldf.fi/semparl/groups/committees/>
