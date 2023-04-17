@@ -120,7 +120,7 @@ def main(year):
         '2019': 87,
         '2020': 170,
         '2021': 167,
-        # '2022': 51,
+        '2022': 180
     }
     all_speeches = []
     #print('vajaa lista')
