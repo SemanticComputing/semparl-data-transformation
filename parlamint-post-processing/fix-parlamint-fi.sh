@@ -43,3 +43,5 @@ for FILE_XML in Data/ParlaMint-FI/*[0-9].xml; do
 done
 
 sed -i '' "s/$(echo -ne '\u00A0')/ /g" Data/ParlaMint-FI/*[0-9].xml
+
+sed -i '' -E 's/(relation active="[^"]+) "/\1"/' Data/ParlaMint-FI/ParlaMint-FI.xml
