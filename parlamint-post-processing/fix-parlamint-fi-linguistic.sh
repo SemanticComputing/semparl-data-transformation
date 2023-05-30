@@ -8,3 +8,5 @@ sed -i '' 's|\[ParlaMint SAMPLE\]|\[ParlaMint.ana SAMPLE\]|' Data/ParlaMint-FI/P
 sed -i '' -E 's|(title[^>]+>[^<]+\[ParlaMint)|\1.ana|' Data/ParlaMint-FI/ParlaMint-FI_*.ana.xml
 
 sed -i '' -E 's|target="([^" ]+) ([^" ]+)"|target="#\1 #\2"|g' Data/ParlaMint-FI/ParlaMint-FI_*.ana.xml
+
+sed -i '' 's/UPosTag=PUNCT|/UPosTag=PUNCT/g' Data/ParlaMint-FI/ParlaMint-FI_*.ana.xml
