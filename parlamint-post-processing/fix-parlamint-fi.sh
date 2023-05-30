@@ -42,3 +42,4 @@ for FILE_XML in Data/ParlaMint-FI/*[0-9].xml; do
   sed -i '' "s|$BASENAME_FILE_XML|$ID.xml|" Data/ParlaMint-FI/ParlaMint-FI.xml
 done
 
+sed -i '' "s/$(echo -ne '\u00A0')/ /g" Data/ParlaMint-FI/*[0-9].xml
