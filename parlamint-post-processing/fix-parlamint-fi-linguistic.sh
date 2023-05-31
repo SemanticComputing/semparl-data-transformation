@@ -9,7 +9,7 @@ sed -i '' -E 's|(title[^>]+>[^<]+\[ParlaMint)|\1.ana|' Data/ParlaMint-FI/ParlaMi
 
 sed -i '' -E 's|target="([^" ]+) ([^" ]+)"|target="#\1 #\2"|g' Data/ParlaMint-FI/ParlaMint-FI_*.ana.xml
 
-sed -i '' 's/UPosTag=PUNCT|/UPosTag=PUNCT/g' Data/ParlaMint-FI/ParlaMint-FI_*.ana.xml
+sed -i '' -E 's/\|">/">/g' Data/ParlaMint-FI/ParlaMint-FI_*.ana.xml
 
 sed -i '' 's/:ns0//g' Data/ParlaMint-FI/ParlaMint-FI*.ana.xml
 sed -i '' 's/ns0://g' Data/ParlaMint-FI/ParlaMint-FI*.ana.xml
