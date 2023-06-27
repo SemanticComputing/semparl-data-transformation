@@ -40,6 +40,30 @@ for FILE_XML in Data/ParlaMint-FI/*[0-9].xml; do
   mv $FILE_XML Data/ParlaMint-FI/$ID.xml
   BASENAME_FILE_XML=`basename $FILE_XML`
   sed -i '' "s|$BASENAME_FILE_XML|$ID.xml|" Data/ParlaMint-FI/ParlaMint-FI.xml
+
+  DATE=`echo $ID | sed -E 's/^[^0-9]+([0-9-]+)-.+$/\1/'`
+  MEETING=`echo $ID | sed -E 's/^.+([0-9]+)$/\1/'`
+  if [[ $DATE < "2016-02-02" ]]; then
+    SESSION="2015"
+  elif [[ $DATE < "2017-02-01" ]]; then
+    SESSION="2016"
+  elif [[ $DATE < "2018-02-05" ]]; then
+    SESSION="2017"
+  elif [[ $DATE < "2019-04-17" ]]; then
+    SESSION="2018"
+  elif [[ $DATE < "2020-04-02" ]]; then
+    SESSION="2019"
+  elif [[ $DATE < "2021-02-02" ]]; then
+    SESSION="2020"
+  else
+    SESSION="2021"
+  fi
+  if [[ $SESSION = "2019" || $SESSION = "2020" || $SESSION = "2021" ]]; then
+    TERM=2019
+  else
+    TERM=2015
+  fi
+  sed -i '' -E "s|<meeting.+|<meeting ana='#parla.uni #parla.term #parl_term.$TERM' corresp='#fi_parliament' n='$TERM'>Vaalikausi $TERM</meeting><meeting ana='#parla.uni #parla.session' corresp='#fi_parliament' n='$SESSION'>Valtiopäivät $SESSION</meeting><meeting ana='#parla.uni #parla.meeting' corresp='#fi_parliament' n='$MEETING'>Täysistunto $MEETING</meeting><meeting ana='#parla.uni #parla.sitting' corresp='#fi_parliament' n='$DATE'>$DATE</meeting>|" Data/ParlaMint-FI/$ID.xml
 done
 
 sed -i '' "s/$(echo -ne '\u00A0')/ /g" Data/ParlaMint-FI/*[0-9].xml
