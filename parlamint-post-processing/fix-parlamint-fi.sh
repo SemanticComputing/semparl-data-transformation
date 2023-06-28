@@ -65,3 +65,6 @@ done
 sed -i '' "s/$(echo -ne '\u00A0')/ /g" Data/ParlaMint-FI/*[0-9].xml
 
 sed -i '' -E 's/(relation active="[^"]+) "/\1"/' Data/ParlaMint-FI/ParlaMint-FI.xml
+
+sed -i '' -E 's/next="([^#"][^"]+)"/next="#\1"/' Data/ParlaMint-FI/*[0-9].xml
+sed -i '' -E 's/prev="([^#"][^"]+)"/prev="#\1"/' Data/ParlaMint-FI/*[0-9].xml
