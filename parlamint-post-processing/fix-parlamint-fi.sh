@@ -25,7 +25,7 @@ sed -i '' -E '/<person xml:id="Hoskinen">/,+3 s|<forename/>|<forename>Hannu</for
 sed -i '' '/<person xml:id="Sarkomaan">/{N;N;N;N;N;d;}' Data/ParlaMint-FI/ParlaMint-FI.xml
 sed -i '' 's|#Sarkomaan|#SariSarkomaa|' Data/ParlaMint-FI/*[0-9].xml
 
-sed -i '' 's| </head>|</head>|' Data/ParlaMint-FI/ParlaMint-FI_2015-05-28-ps-8.xml
+sed -i '' 's| </head>|</head>|' Data/ParlaMint-FI/*[0-9].xml
 
 sed -i '' 's|<idno subtype="handle" type="URI"/>|<idno subtype="handle" type="URI">http://hdl.handle.net/11356/XXXX</idno>|' Data/ParlaMint-FI/ParlaMint-FI.xml Data/ParlaMint-FI/*[0-9].xml
 
