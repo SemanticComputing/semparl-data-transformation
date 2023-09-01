@@ -1,6 +1,6 @@
 #!/bin/sh
 
-for FILE_ANA in Data/ParlaMint-FI/ParlaMint-FI.ana.xml Data/ParlaMint-FI/*[0-9].ana.xml; do
+for FILE_ANA in Samples/ParlaMint-FI/ParlaMint-FI.ana.xml Samples/ParlaMint-FI/*[0-9].ana.xml; do
   MEASURE=`grep -E '<measure[^<]+</measure>' $FILE_ANA`
   OLD_IFS="$IFS"
   IFS=$'\n'
