@@ -38,7 +38,7 @@ for FILE_XML in Samples/ParlaMint-FI/*[0-9].xml; do
   sed -i '' "s|$BASENAME_FILE_XML|$ID.xml|" Samples/ParlaMint-FI/ParlaMint-FI.xml
 
   DATE=`echo $ID | sed -E 's/^[^0-9]+([0-9-]+)-.+$/\1/'`
-  MEETING=`echo $ID | sed -E 's/^.+([0-9]+)$/\1/'`
+  MEETING=`echo $ID | sed -E 's/^.+-([0-9]+)$/\1/'`
   if [[ $DATE < "2016-02-02" ]]; then
     SESSION="2015"
   elif [[ $DATE < "2017-02-01" ]]; then
