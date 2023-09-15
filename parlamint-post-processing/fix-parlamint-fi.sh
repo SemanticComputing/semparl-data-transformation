@@ -30,9 +30,8 @@ sed -i '' 's| </head>|</head>|' Samples/ParlaMint-FI/*[0-9].xml
 sed -i '' 's|<idno subtype="handle" type="URI"/>|<idno subtype="handle" type="URI">http://hdl.handle.net/11356/XXXX</idno>|' Samples/ParlaMint-FI/ParlaMint-FI.xml Samples/ParlaMint-FI/*[0-9].xml
 
 for FILE_XML in Samples/ParlaMint-FI/*[0-9].xml; do
-  ID_TMP=`grep -E '<TEI ana="#parla.sitting #reference" xml:id="[^"]+" xml:lang="fi" xmlns="http://www.tei-c.org/ns/1.0">' $FILE_XML`
-  ID_TMP=`echo $ID_TMP | sed -E 's/^[[:space:]]*.{45}(.+$)/\1/'`
-  ID=`echo $ID_TMP | sed -E 's/(^.+).{52}[[:space:]]*$/\1/'`
+  ID_TMP=`grep -E '<TEI .+>' $FILE_XML`
+  ID=`echo $ID_TMP | sed -E 's/.+xml:id="([^"]+)".+/\1/'`
   mv $FILE_XML Samples/ParlaMint-FI/$ID.xml
   BASENAME_FILE_XML=`basename $FILE_XML`
   sed -i '' "s|$BASENAME_FILE_XML|$ID.xml|" Samples/ParlaMint-FI/ParlaMint-FI.xml
