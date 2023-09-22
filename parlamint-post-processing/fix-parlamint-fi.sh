@@ -74,3 +74,5 @@ sed -i '' -E 's/next="([^#"][^"]+)"/next="#\1"/' $DIR/*[0-9].xml
 sed -i '' -E 's/prev="([^#"][^"]+)"/prev="#\1"/' $DIR/*[0-9].xml
 
 sed -E -i '' 's/who="#(RKP|SDP)"//' $DIR/*[0-9].xml
+
+sed -i '' -E 's|<seg[^/>]+/>||' $DIR/*[0-9].xml
