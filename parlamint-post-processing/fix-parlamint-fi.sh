@@ -75,4 +75,5 @@ sed -i '' -E 's/prev="([^#"][^"]+)"/prev="#\1"/' $DIR/*[0-9].xml
 
 sed -E -i '' 's/who="#(RKP|SDP)"//' $DIR/*[0-9].xml
 
-sed -i '' -E 's|<seg[^/>]+/>||' $DIR/*[0-9].xml
+#sed -i '' -E 's|<seg[^/>]+/>||' $DIR/*[0-9].xml
+# TODO: after empty segs are removed, there can be empty u's -> remove them as well: can't be done with sed as they are multi-line
