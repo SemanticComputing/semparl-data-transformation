@@ -41,6 +41,7 @@ The whole pipeline produces four files for each parliamentary session;
  Whether you use Docker or perform the tasks manually, if you wish to run the whole transformation process, you need the source materials from [here](https://version.aalto.fi/gitlab/seco/semparl-speeches-source-backups).
 - Copy the folders ```fixed_title_txt-files``` and ```original_html``` to this root folder. Don't
 change the names or structure of these folders. (to make things easier you might want to first delete the identical example folders in this repository)
+- Create an empty folder ```results```.
 
 &nbsp;
 
@@ -48,6 +49,8 @@ change the names or structure of these folders. (to make things easier you might
 - Install [Docker](https://docs.docker.com/engine/install/).
 
 - Read the above section [Preparation](#preparation)
+
+- Read the below section [Maintenance](#maintenance)
 
 - If you only wish to update the newest year, you now got all you need!
 
@@ -62,6 +65,8 @@ change the names or structure of these folders. (to make things easier you might
     Or update the newest year:
 
     ```sudo docker run --user $(id -u) -v "$(pwd)/results:/app/results" pipeline update``` 
+
+- Then you can run the Government proposals gathering and transforming process (see the below section [Government proposals](#government-proposals)).
 
 - After the process is done, the result files will be available in newly made folder ```results```.
 
@@ -231,7 +236,7 @@ This process can be run by using a presearched list of government ids and retrie
  Certain things need to be adjusted every time a parliamentary session (valtiopäivät) ends and a new one starts.
 
  - In ```parliamentary_session.csv```:
-    - fill in the end date of the previous session ('Päättymispäivä')
+    - fill in the end date of the previous session ('Päättymispäivä') (You can check the starting and ending dates of 'valtiopäivät' and 'vaalikaudet' [here](https://www.eduskunta.fi/FI/naineduskuntatoimii/tilastot/valtiopaivaasiat/aiemmat-vaalikaudet/Sivut/default.aspx#valtiopaivat))
     - add id for the new session (e.g. 2023) in the first column ('Valtiopäivien tunnus') in a new row
     - add start date for that session ('alkupäivä')
     - if electoral period has changed, add its URI ('Vaalikausi')
