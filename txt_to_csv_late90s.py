@@ -127,6 +127,9 @@ def document_start(row):
     # 5. Tiistaina 13 päivänä helmikuuta 1990
     if re.compile('\f*\(?[0-9]+[\.,\)] [A-Z][a-zåäö]+ [0-9]+ päivänä .*kuuta 199[0-9]').match(row):
         return True
+    elif re.compile('\f*\(?[0-9]+[\.,\)] (maan|tiis|kesk|tors|perj|laua|sunn)\w+na \d{1,2}\. \w+kuuta 19\d{2}').match(row.lower()):
+        # 96. TIISTAINA 23. MARRASKUUTA 1999
+        return True
     return False
 
 
@@ -179,6 +182,18 @@ def get_speaker(all_):
 
 
 def session_details(row, parliament_year):
+    '''
+    Input: '17. Torstaina 26 päivänä helmikuuta 1998'
+    Output:  '18/1998', '18', '1998-helmikuu-27'
+
+    added 30.5. 2024
+    Input: '86. TIISTAINA 9. MARRASKUUTA 1999'
+    Output: '86/1999', '86', '1999-marraskuu-9'
+    '''
+    if m := re.match(r'(?P<session>\d{1,3})\. (?:maa|tiis|kesk|tors|perj|laua|sunn).+na (?P<day>\d{1,2})\. (?P<month>(?:tamm|helm|maal|huht|touk|kesä|hein|syys|loka|marr|joul)\w+kuu)ta (?P<year>19\d{2})', row.strip().lower()):
+        session = m.groupdict().get('session')
+        day, month, year = m.groupdict().get('day'), m.groupdict().get('month'), m.groupdict().get('year')
+        return '{:s}/{:s}'.format(session,year), session, '{:s}-{:s}-{:s}'.format(year, month, day)
     # 145. Maanantaina 10 päivänä joulukuuta 1990
     # to year-month-day
     row = row.replace(')', '.')
