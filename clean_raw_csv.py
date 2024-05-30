@@ -33,6 +33,7 @@ def clean_date(date):
         'syyskuu': '09',
         'lokakuu': '10',
         'marraskuu': '11',
+        'matraskuu': '11', # typo in source data
         'joulukuu': '12',
     }
     parts = date.split('-')
