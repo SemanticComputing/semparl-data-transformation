@@ -159,6 +159,10 @@ def clean_actor(actor, date):
             last_name = parts[-1].strip()
         else:  # ministers etc.
             parts = actor.split(' ')
+            if len(parts)==1:
+                # errors like "Pulliainen(vastauspuheenvuoro)"
+                # -> ["Pulliainen", "(vastauspuheenvuoro)"]
+                parts = re.sub(r'(\w)(\(\w)', r'\1 \2', actor).split(' ')
             if '(vastaus' in parts[-1]:
                 last_name = parts[-2].strip()
                 role = ' '.join(parts[:-2])
