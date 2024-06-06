@@ -211,8 +211,8 @@ def main(year):
 
         # Chairman speech
                     if 'PuheenjohtajaRepliikki' in speech.name:
-                        speaker = speech.find(
-                            'vsk1:PuheenjohtajaTeksti').string.split()
+                        speaker = (speech.find(
+                            'vsk1:PuheenjohtajaTeksti').string or '').split()
 
                         content = extract_cp_content(speech).strip()
 
