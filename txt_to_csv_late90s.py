@@ -190,7 +190,8 @@ def session_details(row, parliament_year):
     Input: '86. TIISTAINA 9. MARRASKUUTA 1999'
     Output: '86/1999', '86', '1999-marraskuu-9'
     '''
-    if m := re.match(r'(?P<session>\d{1,3})\. (?:maa|tiis|kesk|tors|perj|laua|sunn).+na (?P<day>\d{1,2})\. (?P<month>(?:tamm|helm|maal|huht|touk|kesä|hein|syys|loka|marr|joul)\w+kuu)ta (?P<year>19\d{2})', row.strip().lower()):
+    m = re.match(r'(?P<session>\d{1,3})\. (?:maa|tiis|kesk|tors|perj|laua|sunn).+na (?P<day>\d{1,2})\. (?P<month>(?:tamm|helm|maal|huht|touk|kesä|hein|syys|loka|marr|joul)\w+kuu)ta (?P<year>19\d{2})', row.strip().lower())
+    if m:
         session = m.groupdict().get('session')
         day, month, year = m.groupdict().get('day'), m.groupdict().get('month'), m.groupdict().get('year')
         return '{:s}/{:s}'.format(session,year), session, '{:s}-{:s}-{:s}'.format(year, month, day)
