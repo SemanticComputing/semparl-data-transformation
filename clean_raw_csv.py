@@ -37,11 +37,12 @@ def clean_date(date):
         'joulukuu': '12',
     }
     parts = date.split('-')
+    year = parts[0].strip('"')
     if len(parts[2]) == 1:
         day = '0'+parts[2]
     else:
         day = parts[2]
-    return '{:s}-{:s}-{:s}'.format(parts[0], months[parts[1]], day)
+    return '{:s}-{:s}-{:s}'.format(year, months[parts[1]], day)
 
 
 def remove_hyphens(content):
