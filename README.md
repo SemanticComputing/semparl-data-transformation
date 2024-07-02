@@ -239,7 +239,7 @@ This process can be run by using a presearched list of government ids and retrie
     - fill in the end date of the previous session ('Päättymispäivä') (You can check the starting and ending dates of 'valtiopäivät' and 'vaalikaudet' [here](https://www.eduskunta.fi/FI/naineduskuntatoimii/tilastot/valtiopaivaasiat/aiemmat-vaalikaudet/Sivut/default.aspx#valtiopaivat))
     - add id for the new session (e.g. 2023) in the first column ('Valtiopäivien tunnus') in a new row
     - add start date for that session ('alkupäivä')
-    - if electoral period has changed, add its URI ('Vaalikausi')
+    - if electoral period has changed, add its URI ('Vaalikausi') (Check the [semparl-actors dataset / Timespans graph](https://www.ldf.fi/dataset/semparl) for a correct URI, and if it does not exist there, it needs to be added there first)
 - In ```xml_to_rdf_xml.sh``` 
     - expand the for-loop's year limit to cover the new session
     - change the variable ```year``` in the ```else```-condition to the current year
