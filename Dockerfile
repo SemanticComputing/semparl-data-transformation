@@ -4,9 +4,16 @@ ENV RUNNING_IN_DOCKER_CONTAINER Yes
 
 WORKDIR /app
 
-COPY . /app/
+COPY requirements.txt /app/
 
 RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r requirements.txt
+
+COPY *.csv *.py *.sh *.txt /app/
+COPY other_tools /app/other_tools
+
+COPY original_html /app/original_html
+COPY fixed_title_txt-files /app/fixed_title_txt-files
+RUN mkdir /app/results
 
 RUN chmod a+r *
 RUN chmod -R a+rwx ./original_html
