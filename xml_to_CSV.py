@@ -139,6 +139,11 @@ def main(year):
         response = requests.get(
             'https://avoindata.eduskunta.fi/api/v1/tables/VaskiData/rows', params=parameters)
         json_data = json.loads(response.content)
+
+        # store API response json files for archival
+        with open('speeches_{}_{:d}.json'.format(year, i), 'w') as file:
+            json.dump(json_data, file, ensure_ascii=False, indent=4)
+
         rows = json_data['rowData']
 
         if len(rows) == 0:
