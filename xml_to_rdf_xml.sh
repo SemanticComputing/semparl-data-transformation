@@ -44,4 +44,4 @@ fi
 mv *.xml results/
 mv *.ttl results
 mv speeches_*.csv results/
-mv speeches_*_*.json resuls/
+mv speeches_*_*.json results/
