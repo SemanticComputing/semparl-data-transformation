@@ -21,6 +21,7 @@ RUN chmod -R a+rwx ./fixed_title_txt-files
 RUN chmod a+rx *.sh
 RUN chmod a+rx *.py
 RUN chmod a+w .
+RUN chmod a+w ./gov_prop_ids.txt
 RUN chmod a+w ./results
 
 ENTRYPOINT [ "./speech_transformation.sh" ]
