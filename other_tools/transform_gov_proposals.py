@@ -61,6 +61,11 @@ def main():
         response = requests.get(
             'https://avoindata.eduskunta.fi/api/v1/tables/VaskiData/rows', params=parameters)
         json_data = json.loads(response.content)
+
+        # store API response json files for archival, TODO
+        with open('government_proposals_{}.json'.format(i), 'w') as file:
+            json.dump(json_data, file, ensure_ascii=False, indent=4)
+
         proposal = BeautifulSoup(json_data['rowData'][0][1], "xml")
 
         try:
