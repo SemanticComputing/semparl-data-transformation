@@ -62,7 +62,7 @@ def main():
             'https://avoindata.eduskunta.fi/api/v1/tables/VaskiData/rows', params=parameters)
         json_data = json.loads(response.content)
 
-        # store API response json files for archival, TODO
+        # store API response json files for archival
         with open('government_proposals_{}.json'.format(i), 'w') as file:
             json.dump(json_data, file, ensure_ascii=False, indent=4)
 
