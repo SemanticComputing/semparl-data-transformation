@@ -121,7 +121,8 @@ def main(year):
         '2020': 170,
         '2021': 167,
         '2022': 180,
-	'2023': 77
+        '2023': 77,
+        '2024': 140
     }
     all_speeches = []
     #print('vajaa lista')
@@ -341,6 +342,11 @@ def main(year):
 
 if __name__ == "__main__":
     main(sys.argv[1])
+
+    # debug
+    #for year in range(2015, 2024):
+    #    main(year)
+
 
 
 #
