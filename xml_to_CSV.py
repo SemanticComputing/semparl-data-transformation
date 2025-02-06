@@ -36,9 +36,9 @@ def extract_content(speech_section):
     for child in speech_section.children:
         if 'PuheenjohtajaRepliikki' in child.name:
             content += '<<' + child.find('vsk1:PuheenjohtajaTeksti').string + ':| ' \
-                + child.find('sis:KappaleKooste').string + '>>'
-        elif ('KappaleKooste' in child.name and child.string):
-            content += child.string + '\n'
+                + ''.join(map(str, child.find('sis:KappaleKooste').strings)) + '>>'
+        elif ('KappaleKooste' in child.name and len(list(child.strings)) > 0):
+            content += ''.join(map(str, child.strings)) + '\n'
 
     return content.rstrip('\n')
 
@@ -278,7 +278,7 @@ def main(year):
 
                         else:  # Small comments about wrong vote or such
                             details = ''
-                            content = speech.find('sis:KappaleKooste').string
+                            content = ''.join(map(str, speech.find('sis:KappaleKooste').strings))
 
                         langs = detect_language(content)
 
