@@ -220,4 +220,4 @@ done
 
 mv *.xml results/
 mv *.ttl results/
-mv speeches_*.csv results/
+cp -p speeches_*.csv results/
