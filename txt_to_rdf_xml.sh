@@ -221,3 +221,4 @@ done
 mv *.xml results/
 mv *.ttl results/
 cp -p speeches_*.csv results/
+rm results/speeches_1999.csv

@@ -36,3 +36,5 @@ done
 mv *.xml results/
 mv *.ttl results/
 mv speeches_*.csv results/
+rm results/speeches_1999_a.csv
+rm results/speeches_1999_b.csv
