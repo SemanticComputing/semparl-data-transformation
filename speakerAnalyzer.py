@@ -72,7 +72,7 @@ class SpeakerAnalyzer:
     OPPOSITION_PARTY = "Oppositiopuolue"
 
     def queryPartyInfo(self, query):
-        sparql = SPARQLWrapper("https://ldf.fi/semparl/sparql")
+        sparql = SPARQLWrapper("https://ldf.fi/semparl-dev/sparql")
         sparql.setQuery(query)
             
         sparql.setReturnFormat(JSON)
@@ -89,7 +89,7 @@ class SpeakerAnalyzer:
 
     
     def queryGovernmentInfo(self, query):
-        sparql = SPARQLWrapper("https://ldf.fi/semparl/sparql")
+        sparql = SPARQLWrapper("https://ldf.fi/semparl-dev/sparql")
         sparql.setQuery(query)
             
         sparql.setReturnFormat(JSON)
@@ -170,7 +170,7 @@ class SpeakerAnalyzer:
         return res[0] if len(res) else (None, dict(label='no government'))
     
     def queryMemberships(self, query):
-        sparql = SPARQLWrapper("https://ldf.fi/semparl/sparql")
+        sparql = SPARQLWrapper("https://ldf.fi/semparl-dev/sparql")
         sparql.setQuery(query)
             
         sparql.setReturnFormat(JSON)
