@@ -169,7 +169,8 @@ do
 #############################################################
 # Transform the exception file between Valtiopäivät in 1917 #
 #############################################################
-    if test -d "../data/1908-1999/19${decade}0s/fixed_ocr-text/$year/valiliite";  
+    path=./fixed_title_txt-files/$year
+    if test -d "$path/valiliite";
     then 
         path=./fixed_title_txt-files/$year/valiliite
         files=$path/*.txt
