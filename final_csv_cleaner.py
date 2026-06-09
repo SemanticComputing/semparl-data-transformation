@@ -43,8 +43,6 @@ with open('speeches_{}.csv'.format(year), newline='') as csvfile:
 print(len(rows))
 print('>Rows attached to previous ones, fixing cases where one speech was erroneously split:\n***')
 new = []
-# to follow when year changes in document that didn't mark years in titles
-following_year = False
 
 # find right column indexes (this is to ensure that making edits to the pipeline,
 # doesn't require rewriting tens on indexes here)
@@ -210,12 +208,6 @@ for i in range(1, len(rows)):
             rows[i][first_ix], rows[i][last_ix], rows[i][party_ix] = 'Timo', 'Roos', 'SDP'
         elif first == 'J':
             rows[i][first_ix], rows[i][last_ix], rows[i][party_ix] = 'Jukka', 'Roos', 'SDP'
-
-    if int(year) < 1920:  # fix incorrect years (due to lack of years in titles)
-        if re.search('19[01]\d\-12\-\d\d', date) and not following_year:
-            following_year = True
-        if not re.search('19[01]\d\-12\-\d\d', date) and following_year:
-            rows[i][date_ix] = str(int(date[:4])+1)+date[4:]
 
     if first == 'SL' and last == 'Anttila':
         rows[i][first_ix] = 'Sirkka-Liisa'

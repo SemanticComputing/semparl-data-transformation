@@ -20,7 +20,7 @@ def form_speechID(session, index):
     return '{:s}_{:s}_{:d}'.format(n[1], n[0], index)
 
 
-def clean_date(date):
+def clean_date(date, parliamentary_session, following_year):
     months = {
         'tammikuu': '01',
         'helmikuu': '02',
@@ -38,11 +38,15 @@ def clean_date(date):
     }
     parts = date.split('-')
     year = parts[0].strip('".')
+    month = months[parts[1]]
+    if int(parliamentary_session) < 1920:  # fix incorrect years (due to lack of years in titles)
+        if month != '12' and following_year:
+            year = str(int(year)+1)
     if len(parts[2]) == 1:
         day = '0'+parts[2]
     else:
         day = parts[2]
-    return '{:s}-{:s}-{:s}'.format(year, months[parts[1]], day)
+    return '{:s}-{:s}-{:s}'.format(year, month, day)
 
 
 def remove_hyphens(content):
@@ -416,8 +420,21 @@ with open(filename, newline='') as csvfile:
     party_roles = {}
     rows = list(reader)
 
+    # the year fixing logic was moved from final_csv_cleaner.py here as it is needed to be done before finding speakers' party and parliamentary group
+    parliamentary_session = rows[0][0].partition('/')[2]
+    parliamentary_session_year = int(re.sub('_(II|XX)', '', parliamentary_session))
+
+    # to follow when year changes in document that didn't mark years in titles
+    following_year = False
+
+    for row in rows:
+        row[1] = clean_date(row[1], parliamentary_session_year, following_year)
+        if int(parliamentary_session_year) < 1920:  # fix incorrect years (due to lack of years in titles)
+            if re.search('19[01]\d\-12\-\d\d', row[1]) and not following_year:
+                following_year = True
+
     # filter out some rows based on date for efficiency
-    last_date = clean_date(rows[-1][1])
+    last_date = rows[-1][1]
 
     members['parl_period_start'] = pd.to_datetime(
         members['parl_period_start'], format='%Y-%m-%d')
@@ -432,7 +449,7 @@ with open(filename, newline='') as csvfile:
             continue
         index += 1
         session = row[0]
-        date = clean_date(row[1])
+        date = row[1]
         start = check_time(row[2].strip())
         end = check_time(row[3].strip())
         actor = row[4].replace('<Puhuja>', '',)
