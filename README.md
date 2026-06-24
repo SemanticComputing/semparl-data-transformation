@@ -235,7 +235,7 @@ This process can be run by using a presearched list of government ids and retrie
 # Maintenance
  Certain things need to be adjusted every time a parliamentary session (valtiopäivät) ends and a new one starts.
 
- - In ```parliamentary_session.csv```:
+ - In ```parliamentary_sessions.csv```:
     - fill in the end date of the previous session ('Päättymispäivä') (You can check the starting and ending dates of 'valtiopäivät' and 'vaalikaudet' [here](https://www.eduskunta.fi/FI/naineduskuntatoimii/tilastot/valtiopaivaasiat/aiemmat-vaalikaudet/Sivut/default.aspx#valtiopaivat))
     - add id for the new session (e.g. 2023) in the first column ('Valtiopäivien tunnus') in a new row
     - add start date for that session ('alkupäivä')
